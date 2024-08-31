@@ -25,7 +25,7 @@ minio:
 logging:
   level:
     org:
-      springframework=DEBUG: INFO
+      springframework=DEBUG: DEBUG
 
 external-api:
   authentication-url: http://localhost:8082/login # http://correspondencia.gobernaciondecochabamba.bo/Restserver/singin
