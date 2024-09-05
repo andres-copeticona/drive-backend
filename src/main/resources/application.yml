@@ -1,5 +1,7 @@
 server:
   port: 8080
+  servlet:
+    contextPath: /api
 
 spring:
   datasource:
@@ -30,3 +32,12 @@ logging:
 external-api:
   authentication-url: http://localhost:8082/login # http://correspondencia.gobernaciondecochabamba.bo/Restserver/singin
 
+  ## Swagger https://springdoc.org/
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /doc/swagger-ui.html
+
+  pathsToMatch: /**

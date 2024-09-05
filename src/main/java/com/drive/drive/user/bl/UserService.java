@@ -2,40 +2,36 @@ package com.drive.drive.user.bl;
 
 import com.drive.drive.security.JwtUtil;
 import com.drive.drive.user.dto.RolDto;
+import com.drive.drive.user.dto.UserFilter;
 import com.drive.drive.user.dto.UsuarioDTO;
 import com.drive.drive.user.entity.Rol;
 import com.drive.drive.user.entity.Usuario;
 import com.drive.drive.user.repository.RolRepository;
-import com.drive.drive.user.repository.UsuarioRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.drive.drive.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.security.Key;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class AuthService {
+public class UserService {
+
+  Logger log = LoggerFactory.getLogger(UserService.class);
 
   @Autowired
-  private JwtUtil jwtUtil;
-
-  @Autowired
-  private UsuarioRepository usuarioRepository;
+  private UserRepository usuarioRepository;
 
   @Autowired
   private RolRepository rolRepository;
@@ -46,97 +42,15 @@ public class AuthService {
   @Value("${external-api.authentication-url}")
   private String authenticationUrl;
 
-  // Generar una clave segura para JWT
-  // public static final Key SECRET_KEY =
-  // Keys.secretKeyFor(SignatureAlgorithm.HS256);
-  // private static final int EXPIRATION_TIME = 3 * 60 * 1000; // 3 minutos en
-  // milisegundos
-
-  // Método para registrar un nuevo usuario
   public UsuarioDTO register(UsuarioDTO usuarioDTO) {
     Usuario usuario = convertToEntity(usuarioDTO);
 
-    // Asignar rol por defecto (asumiendo que el rol "Administrador" existe)
     Rol rolUsuario = rolRepository.findByNombreRol("Administrador")
         .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
     usuario.setRol(rolUsuario);
 
     Usuario savedUsuario = usuarioRepository.save(usuario);
     return convertToDTO(savedUsuario);
-  }
-
-  @SuppressWarnings("unchecked")
-  public ResponseEntity<Map<String, Object>> authenticateAndSave(String login, String password, String token) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    Map<String, String> map = new HashMap<>();
-    map.put("login", login);
-    map.put("password", password);
-    map.put("token", token);
-    HttpEntity<Map<String, String>> entity = new HttpEntity<>(map, headers);
-
-    Usuario user = null;
-
-    // Make a mock for the authentication response
-    Optional<Usuario> existingUsuario = usuarioRepository.findById(4L);
-
-    if (existingUsuario.isPresent()) {
-      user = existingUsuario.get();
-    }
-
-    if (user != null) {
-      String jwtToken = jwtUtil.generateToken(user.getUsuario());
-      Map<String, Object> result = new HashMap<>();
-      result.put("token", jwtToken);
-      result.put("user", convertToDTO(user));
-      return ResponseEntity.ok(result);
-    } else {
-      throw new RestClientException("Failed to authenticate user with external API");
-    }
-
-    // ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-    // authenticationUrl,
-    // HttpMethod.POST,
-    // entity,
-    // new ParameterizedTypeReference<Map<String, Object>>() {
-    // });
-    //
-    // if (response.getStatusCode() == HttpStatus.OK) {
-    // Map<String, Object> responseBody = response.getBody();
-    // if (responseBody != null && responseBody.get("data") != null) {
-    // List<Map<String, Object>> usersData = (List<Map<String, Object>>)
-    // responseBody.get("data");
-    // if (!usersData.isEmpty()) {
-    // // Suponiendo que siempre es una lista con un solo objeto de usuario
-    // Map<String, Object> userData = usersData.get(0);
-    // UsuarioDTO usuarioDTO = new ObjectMapper().convertValue(userData,
-    // UsuarioDTO.class);
-    //
-    // // Verificar si el usuario ya existe en la base de datos
-    // Optional<Usuario> existingUsuario =
-    // usuarioRepository.findByUsuario(usuarioDTO.getUsuario());
-    // Usuario usuario;
-    // if (existingUsuario.isPresent()) {
-    // usuario = existingUsuario.get();
-    // } else {
-    // // El usuario es nuevo, guarda en la base de datos
-    // usuario = saveNewUser(usuarioDTO);
-    // }
-    //
-    // //TODO: Generar el token JWT
-    // String jwtToken = ""; //generateToken(usuario.getUsuario());
-    //
-    // // Preparar la respuesta
-    // Map<String, Object> result = new HashMap<>();
-    // result.put("token", jwtToken);
-    // result.put("user", convertToDTO(usuario));
-    //
-    // return ResponseEntity.ok(result);
-    // }
-    // }
-    // }
-    // throw new RestClientException("Failed to authenticate user with external
-    // API");
   }
 
   private Usuario saveNewUser(UsuarioDTO usuarioDTO) {
@@ -182,10 +96,20 @@ public class AuthService {
     return usuario;
   }
 
-  // Método para obtener todos los usuarios paginados
-  public Page<UsuarioDTO> findAllUsersPaginated(int page, int size) {
-    Pageable pageable = PageRequest.of(page, size);
-    Page<Usuario> usuarios = usuarioRepository.findAll(pageable);
+  public Page<UsuarioDTO> findAll(UserFilter filter) {
+    Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
+
+    Page<Usuario> usuarios;
+
+    // TODO: Change the search query to use the new field
+    if (filter.getSearchTerm() != "") {
+      usuarios = usuarioRepository
+          .findByNombresContainingIgnoreCaseOrPaternoContainingIgnoreCaseOrMaternoContainingIgnoreCase(
+              filter.getSearchTerm(), filter.getSearchTerm(), filter.getSearchTerm(), pageable);
+    } else {
+      usuarios = usuarioRepository.findAll(pageable);
+    }
+
     List<UsuarioDTO> dtos = usuarios.getContent().stream()
         .map(this::convertToDTO)
         .collect(Collectors.toList());
@@ -207,6 +131,7 @@ public class AuthService {
     usuarioDTO.setDomicilio(usuario.getDomicilio());
     usuarioDTO.setUsuario(usuario.getUsuario());
     usuarioDTO.setStatus(usuario.isStatus());
+    usuarioDTO.setFullName(usuario.getFullname());
     RolDto rolDto = convertToRolDto(usuario.getRol());
     usuarioDTO.setRoles(new HashSet<>(Collections.singletonList(rolDto)));
     return usuarioDTO;

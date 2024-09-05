@@ -31,12 +31,11 @@ public class JwtUtil {
   }
 
   private Claims extractAllClaims(String token) {
-    return Jwts.parser().setSigningKey(SECRET).parseClaimsJws(token).getBody();
+    return Jwts.parserBuilder().setSigningKey(SECRET).build().parseClaimsJws(token).getBody();
   }
 
-  public String generateToken(String username) {
-    Map<String, Object> claims = new HashMap<>();
-    return createToken(claims, username);
+  public String generateToken(Map<String, Object> claims, String subject) {
+    return createToken(claims, subject);
   }
 
   private String createToken(Map<String, Object> claims, String subject) {
@@ -45,7 +44,7 @@ public class JwtUtil {
         .setSubject(subject)
         .setIssuedAt(new Date(System.currentTimeMillis()))
         .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-        .signWith(SignatureAlgorithm.HS256, SECRET)
+        .signWith(SECRET, SignatureAlgorithm.HS256)
         .compact();
   }
 
