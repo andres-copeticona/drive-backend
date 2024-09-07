@@ -7,16 +7,22 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface SharedFolderRepository extends JpaRepository<SharedFolder, Long> {
-    List<SharedFolder> findByFolder_Id(Long folderId);
-    List<SharedFolder> findByEmisor_UsuarioID(Long usuarioID);
-    List<SharedFolder> findByReceptor_UsuarioID(Long usuarioID);
+  List<SharedFolder> findByFolder_Id(Long folderId);
 
-    @Query("SELECT sf FROM SharedFolder sf WHERE sf.receptor.dependencia = ?1")
-    List<SharedFolder> findByReceptorDependencia(String dependencia);
+  List<SharedFolder> findByEmisor_id(Long id);
 
-    List<SharedFolder> findByReceptor_UsuarioIDAndFolder_Id(Long receptorUserId, Long folderId);
-    List<SharedFolder> findByEmisor_UsuarioIDAndFolder_Id(Long emisorUserId, Long folderId);
+  List<SharedFolder> findByReceptor_id(Long id);
 
-    @Query("SELECT sf.receptor.usuarioID FROM SharedFolder sf WHERE LOWER(sf.folder.name) = LOWER(?1)")
-    List<Long> findUserIdsByFolderName(String folderName);
+  @Query("SELECT sf FROM SharedFolder sf WHERE sf.receptor.dependence = ?1")
+  List<SharedFolder> findByReceptorDependencia(String dependencia);
+
+  List<SharedFolder> findByReceptor_idAndFolder_Id(Long receptorUserId, Long folderId);
+
+  List<SharedFolder> findByEmisor_idAndFolder_Id(Long emisorUserId, Long folderId);
+
+  @Query("SELECT sf.receptor.id FROM SharedFolder sf WHERE LOWER(sf.folder.name) = LOWER(?1)")
+  List<Long> findUserIdsByFolderName(String folderName);
+
+  @Query("SELECT sf.receptor.id FROM SharedFolder sf WHERE sf.folder.id = ?1")
+  List<Long> findUserIdsByFolderId(Long folderId);
 }

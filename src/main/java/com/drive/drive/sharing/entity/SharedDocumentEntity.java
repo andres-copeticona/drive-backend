@@ -1,7 +1,7 @@
 package com.drive.drive.sharing.entity;
 
-import com.drive.drive.file.entity.FileEntity;
-import com.drive.drive.user.entity.Usuario;
+import com.drive.drive.modules.file.entities.FileEntity;
+import com.drive.drive.modules.user.entities.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,29 +16,29 @@ import java.util.Date;
 @Table(name = "Documentos_Compartidos")
 public class SharedDocumentEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "CompartidoID")
-    private Long compartidoId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "CompartidoID")
+  private Long compartidoId;
 
-    @ManyToOne
-    @JoinColumn(name = "Receptor_UsuarioID", referencedColumnName = "UsuarioID")
-    private Usuario receptor;
+  @ManyToOne
+  @JoinColumn(name = "Receptor_UsuarioID", referencedColumnName = "UsuarioID")
+  private UserEntity receptor;
 
-    @ManyToOne
-    @JoinColumn(name = "Emisor_UsuarioID", referencedColumnName = "UsuarioID")
-    private Usuario emisor;
+  @ManyToOne
+  @JoinColumn(name = "Emisor_UsuarioID", referencedColumnName = "UsuarioID")
+  private UserEntity emisor;
 
-    @ManyToOne
-    @JoinColumn(name = "DocumentoID", referencedColumnName = "DocumentoID")
-    private FileEntity documento;
+  @ManyToOne
+  @JoinColumn(name = "DocumentoID", referencedColumnName = "DocumentoID")
+  private FileEntity documento;
 
-    @Column(name = "TipoAcceso")
-    private String tipoAcceso;
+  @Column(name = "TipoAcceso")
+  private String tipoAcceso;
 
-    @Column(name = "CreatedAt")
-    private Date createdAt;
+  @Column(name = "CreatedAt")
+  private Date createdAt;
 
-    @Column(name = "LinkDocumento")
-    private String linkDocumento;
+  @Column(name = "LinkDocumento")
+  private String linkDocumento;
 }

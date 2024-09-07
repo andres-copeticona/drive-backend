@@ -8,7 +8,6 @@ import io.jsonwebtoken.security.Keys;
 
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -28,6 +27,10 @@ public class JwtUtil {
   public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
     final Claims claims = extractAllClaims(token);
     return claimsResolver.apply(claims);
+  }
+
+  public Claims getClaims(String token) {
+    return extractAllClaims(token);
   }
 
   private Claims extractAllClaims(String token) {

@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import io.jsonwebtoken.Claims;
+
 @Component
 public class JWTInterceptor implements HandlerInterceptor {
 
@@ -54,7 +56,10 @@ public class JWTInterceptor implements HandlerInterceptor {
 
         if (jwtUtil.validateToken(jwtToken)) {
           String username = jwtUtil.extractUsername(jwtToken);
+          Claims claims = jwtUtil.getClaims(jwtToken);
           request.setAttribute("username", username);
+          request.setAttribute("userId", claims.get("id"));
+          request.setAttribute("rolId", claims.get("rolId"));
           return true;
         } else {
           sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token inválido o expirado");

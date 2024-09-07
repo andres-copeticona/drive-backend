@@ -10,13 +10,13 @@ import java.util.List;
 @Repository
 public interface SharingRepository extends JpaRepository<SharedDocumentEntity, Long> {
 
-    List<SharedDocumentEntity> findByReceptor_UsuarioID(Long userId);
+  List<SharedDocumentEntity> findByReceptor_id(Long userId);
 
-    List<SharedDocumentEntity> findByEmisor_UsuarioID(Long userId);
+  List<SharedDocumentEntity> findByEmisor_id(Long userId);
 
-    List<SharedDocumentEntity> findByDocumento_Id(Long documentoId);
+  List<SharedDocumentEntity> findByDocumento_Id(Long documentoId);
 
-    @Query("SELECT s FROM SharedDocumentEntity s WHERE s.emisor.usuarioID = :emisorId AND s.receptor.usuarioID = :receptorId")
-    List<SharedDocumentEntity> findSharedDocumentsBetweenUsers(Long emisorId, Long receptorId);
+  @Query("SELECT s FROM SharedDocumentEntity s WHERE s.emisor.id = :emisorId AND s.receptor.id = :receptorId")
+  List<SharedDocumentEntity> findSharedDocumentsBetweenUsers(Long emisorId, Long receptorId);
 
 }

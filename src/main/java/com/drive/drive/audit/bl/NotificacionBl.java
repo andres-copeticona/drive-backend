@@ -3,7 +3,7 @@ package com.drive.drive.audit.bl;
 import com.drive.drive.audit.dto.NotificacionDto;
 import com.drive.drive.audit.entity.Notificaciones;
 import com.drive.drive.audit.repository.NotificacionRepository;
-import com.drive.drive.user.repository.UserRepository;
+import com.drive.drive.modules.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +36,7 @@ public class NotificacionBl {
   public void crearNotificacionMasiva(String titulo, String mensaje, String tipo) {
     usuarioRepository.findAll().forEach(usuario -> {
       Notificaciones notificacion = new Notificaciones();
-      notificacion.setUsuarioId(usuario.getUsuarioID());
+      notificacion.setUsuarioId(usuario.getId());
       notificacion.setTitulo(titulo);
       notificacion.setMensaje(mensaje);
       notificacion.setFecha(LocalDateTime.now());

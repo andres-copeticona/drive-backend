@@ -10,16 +10,16 @@ import java.util.Date;
 @Getter
 @Setter
 public class SharedDocumentDto {
-    private Long compartidoId;
-    private Long receptorUsuarioId;
-    private Long emisorUsuarioId;
-    private Long documentoId;
-    private String tipoAcceso;
-    private Date createdAt;
-    private String linkDocumento;
-    private String nombreDocumento;
-    private String categoria;
-    private String emisorNombre;
-    private String receptorNombre;
+  private Long compartidoId;
+  private Long receptorUsuarioId;
+  private Long emisorUsuarioId;
+  private Long documentoId;
+  private String tipoAcceso;
+  private Date createdAt;
+  private String linkDocumento;
+  private String nombreDocumento;
+  private String categoria;
+  private String emisorNombre;
+  private String receptorNombre;
 
 }
