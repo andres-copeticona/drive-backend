@@ -218,13 +218,13 @@ public class FolderService {
     Map<Long, FolderDto> uniqueFolders = new HashMap<>();
 
     // Procesar carpetas recibidas
-    List<SharedFolder> receivedFolders = sharedFolderRepository.findByReceptor_UsuarioID(userId);
+    List<SharedFolder> receivedFolders = sharedFolderRepository.findByReceptor_id(userId);
     receivedFolders.forEach(
         sharedFolder -> uniqueFolders.put(sharedFolder.getFolder().getId(),
             FolderMapper.entityToDto(sharedFolder.getFolder())));
 
     // Procesar carpetas enviadas
-    List<SharedFolder> sentFolders = sharedFolderRepository.findByEmisor_UsuarioID(userId);
+    List<SharedFolder> sentFolders = sharedFolderRepository.findByEmisor_id(userId);
     sentFolders.forEach(
         sharedFolder -> uniqueFolders.put(sharedFolder.getFolder().getId(),
             FolderMapper.entityToDto(sharedFolder.getFolder())));
@@ -235,9 +235,9 @@ public class FolderService {
 
   // Método para listar los contenidos de una carpeta compartida
   public FolderContentsDto listSharedFolderContents(Long userId, Long folderId) throws Exception {
-    boolean isSharedWithUser = sharedFolderRepository.findByReceptor_UsuarioIDAndFolder_Id(userId, folderId).stream()
+    boolean isSharedWithUser = sharedFolderRepository.findByReceptor_idAndFolder_Id(userId, folderId).stream()
         .anyMatch(sf -> sf.getFolder().getId().equals(folderId));
-    boolean isSharedByUser = sharedFolderRepository.findByEmisor_UsuarioIDAndFolder_Id(userId, folderId).stream()
+    boolean isSharedByUser = sharedFolderRepository.findByEmisor_idAndFolder_Id(userId, folderId).stream()
         .anyMatch(sf -> sf.getFolder().getId().equals(folderId));
 
     if (isSharedWithUser || isSharedByUser) {
@@ -420,7 +420,7 @@ public class FolderService {
 
   // Método para obtener carpetas compartidas con un usuario específico
   public List<FolderDto> getSharedFoldersWithUser(Long userId) {
-    List<SharedFolder> sharedFoldersByUser = sharedFolderRepository.findByReceptor_UsuarioID(userId);
+    List<SharedFolder> sharedFoldersByUser = sharedFolderRepository.findByReceptor_id(userId);
     Set<FolderDto> sharedFolders = new HashSet<>();
 
     sharedFoldersByUser.forEach(sharedFolder -> sharedFolders.add(FolderMapper.entityToDto(sharedFolder.getFolder())));
