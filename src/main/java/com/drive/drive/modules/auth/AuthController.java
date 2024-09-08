@@ -1,20 +1,13 @@
 package com.drive.drive.modules.auth;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClientException;
-
 import com.drive.drive.security.IsPublic;
 import com.drive.drive.modules.auth.dto.LoginDto;
+import com.drive.drive.modules.auth.dto.LoginResponseDto;
 import com.drive.drive.modules.user.dto.UserDto;
 import com.drive.drive.shared.dto.ResponseDto;
 
@@ -39,8 +32,9 @@ public class AuthController {
       @ApiResponse(responseCode = "500", description = "Error saving the user")
   })
   @PostMapping("/register")
+  @IsPublic
   public ResponseEntity<ResponseDto<UserDto>> register(@RequestBody UserDto usuarioDTO) {
-    log.info("Registering user: {}", usuarioDTO.getUsuario());
+    log.info("Registering user: {}", usuarioDTO.getUsername());
     var res = authService.register(usuarioDTO);
     return ResponseEntity.status(res.getCode()).body(res);
   }
@@ -52,17 +46,9 @@ public class AuthController {
   })
   @PostMapping("/login")
   @IsPublic
-  public ResponseEntity<Map<String, Object>> authenticate(@RequestBody LoginDto loginDTO) { // TODO: add response
-    try {
-      ResponseEntity<Map<String, Object>> response = authService.authenticateAndSave(
-          loginDTO.getLogin(),
-          loginDTO.getPassword(),
-          loginDTO.getToken());
-      return ResponseEntity.ok(response.getBody());
-    } catch (RestClientException e) {
-      Map<String, Object> errorResponse = new HashMap<>();
-      errorResponse.put("error", e.getMessage());
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
-    }
+  public ResponseEntity<ResponseDto<LoginResponseDto>> authenticate(@RequestBody LoginDto loginDTO) {
+    log.info("Authenticating user: {}", loginDTO.getLogin());
+    var response = authService.authenticateAndSave(loginDTO);
+    return ResponseEntity.status(response.getCode()).body(response);
   }
 }

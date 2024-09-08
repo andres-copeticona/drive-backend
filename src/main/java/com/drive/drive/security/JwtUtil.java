@@ -51,6 +51,10 @@ public class JwtUtil {
         .compact();
   }
 
+  public Date getExpirationDateFromToken(String token) {
+    return extractExpiration(token);
+  }
+
   public boolean isTokenExpired(String token) {
     return extractExpiration(token).before(new Date());
   }

@@ -5,6 +5,8 @@ import com.drive.drive.shared.dto.ResponseDto;
 
 import lombok.extern.slf4j.Slf4j;
 
+import com.drive.drive.modules.auth.dto.LoginDto;
+import com.drive.drive.modules.auth.dto.LoginResponseDto;
 import com.drive.drive.modules.user.dto.UserDto;
 import com.drive.drive.modules.user.entities.RoleEntity;
 import com.drive.drive.modules.user.entities.UserEntity;
@@ -12,9 +14,7 @@ import com.drive.drive.modules.user.mappers.UserMapper;
 import com.drive.drive.modules.user.repositories.RoleRepository;
 import com.drive.drive.modules.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import java.util.*;
 
 @Slf4j
@@ -46,36 +46,36 @@ public class AuthService {
 
   }
 
-  public ResponseEntity<Map<String, Object>> authenticateAndSave(String login, String password, String token) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(MediaType.APPLICATION_JSON);
-    Map<String, String> map = new HashMap<>();
-    map.put("login", login);
-    map.put("password", password);
-    map.put("token", token);
-    // HttpEntity<Map<String, String>> entity = new HttpEntity<>(map, headers);
+  // TODO: Change the method logic
+  public ResponseDto<LoginResponseDto> authenticateAndSave(LoginDto loginDto) {
+    var res = new ResponseDto<LoginResponseDto>().setCode(200);
 
-    UserEntity user = null;
+    try {
+      UserEntity user = userRepository.findById(4L).get();
 
-    // Make a mock for the authentication response
-    Optional<UserEntity> existingUsuario = userRepository.findById(4L);
-
-    if (existingUsuario.isPresent()) {
-      user = existingUsuario.get();
-    }
-
-    if (user != null) {
       Map<String, Object> claims = new HashMap<>();
       claims.put("id", user.getId());
       claims.put("rolId", user.getRole().getId());
       String jwtToken = jwtUtil.generateToken(claims, user.getUsername());
+      Date expirationDate = jwtUtil.getExpirationDateFromToken(jwtToken);
       Map<String, Object> result = new HashMap<>();
       result.put("token", jwtToken);
       result.put("user", UserMapper.entityToDto(user));
-      return ResponseEntity.ok(result);
-    } else {
-      throw new RestClientException("Failed to authenticate user with external API");
+      LoginResponseDto response = new LoginResponseDto(jwtToken, expirationDate, user);
+      return res.setData(response).setMessage("Usuario autenticado correctamente");
+
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      return res.setCode(500).setMessage("Error al autenticar el usuario");
     }
+
+    // HttpHeaders headers = new HttpHeaders();
+    // headers.setContentType(MediaType.APPLICATION_JSON);
+    // Map<String, String> map = new HashMap<>();
+    // map.put("login", login);
+    // map.put("password", password);
+    // map.put("token", token);
+    // HttpEntity<Map<String, String>> entity = new HttpEntity<>(map, headers);
 
     // ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
     // authenticationUrl,
