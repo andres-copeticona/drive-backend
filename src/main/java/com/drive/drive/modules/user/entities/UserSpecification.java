@@ -8,7 +8,7 @@ public class UserSpecification {
       String searchPattern = "%" + searchTerm.toLowerCase() + "%";
 
       return criteriaBuilder.or(
-          criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), searchPattern),
+          criteriaBuilder.like(criteriaBuilder.lower(root.get("names")), searchPattern),
           criteriaBuilder.like(criteriaBuilder.lower(root.get("username")), searchPattern),
           criteriaBuilder.like(criteriaBuilder.lower(root.get("firstSurname")), searchPattern),
           criteriaBuilder.like(criteriaBuilder.lower(root.get("secondSurname")), searchPattern));

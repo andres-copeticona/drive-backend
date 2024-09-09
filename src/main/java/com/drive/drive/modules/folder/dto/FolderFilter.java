@@ -20,12 +20,20 @@ public class FolderFilter extends BaseFilter<FolderEntity> {
   @Parameter(description = "User that created the folder", example = "1", required = false)
   private Long createdBy;
 
+  @Parameter(description = "Parent id", example = "1", required = false)
+  private Long parentId;
+
   @Override
   public Specification<FolderEntity> getSpecification() {
     Specification<FolderEntity> spec = Specification.where(null);
 
     if (createdBy != null && createdBy > 0)
       spec = spec.and(FolderSpecification.filterByUser(createdBy));
+
+    if (parentId != null && parentId > 0)
+      spec = spec.and(FolderSpecification.filterByFolder(parentId));
+    else
+      spec = spec.and(FolderSpecification.filterByFolder(0L));
 
     if (searchTerm != null && !searchTerm.isBlank())
       spec = spec.and(FolderSpecification.filterBySearchTerm(searchTerm));

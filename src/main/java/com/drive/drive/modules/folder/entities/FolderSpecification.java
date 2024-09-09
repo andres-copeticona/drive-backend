@@ -16,4 +16,14 @@ public class FolderSpecification {
           criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), searchPattern));
     };
   }
+
+  public static Specification<FolderEntity> filterByFolder(Long id) {
+    return (root, query, criteriaBuilder) -> {
+      if (id == 0) {
+        return criteriaBuilder.isNull(root.get("parentFolder"));
+      } else {
+        return criteriaBuilder.equal(root.get("parentFolder").get("id"), id);
+      }
+    };
+  }
 }

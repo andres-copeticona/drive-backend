@@ -25,7 +25,7 @@ public class UserEntity {
   @Column(name = "idServidor")
   private String idServer;
 
-  @Column(name = "nombers")
+  @Column(name = "nombres")
   private String names;
 
   @Column(name = "paterno")

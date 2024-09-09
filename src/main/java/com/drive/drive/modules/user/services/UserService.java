@@ -90,10 +90,10 @@ public class UserService {
       }
 
       List<UserDto> dtos = users.stream().map(UserMapper::entityToDto).collect(Collectors.toList());
-      return res.setData(new ListResponseDto<>(dtos, total)).setMessage("Lista de carpetas obtenida correctamente.");
+      return res.setData(new ListResponseDto<>(dtos, total)).setMessage("Lista de usuarios obtenida correctamente.");
     } catch (Exception e) {
       log.error(e.getMessage());
-      return res.setCode(500).setMessage("Error obteniendo la lista de carpetas");
+      return res.setCode(500).setMessage("Error obteniendo la lista de usuarios");
     }
   }
 

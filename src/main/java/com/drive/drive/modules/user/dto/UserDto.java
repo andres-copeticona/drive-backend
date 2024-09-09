@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -28,7 +27,7 @@ public class UserDto {
   private LocalDateTime updatedAt;
   private boolean deleted;
   private boolean status;
-  private Set<RoleDto> roles;
+  private RoleDto role;
 
   @JsonSetter("status")
   public void setStatusFromString(String status) {
