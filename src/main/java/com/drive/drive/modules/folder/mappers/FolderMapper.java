@@ -13,7 +13,7 @@ public class FolderMapper {
     String code = UUID.randomUUID().toString();
 
     FolderEntity folderEntity = new FolderEntity();
-    folderEntity.setName(createFolderDto.getFolderName());
+    folderEntity.setName(createFolderDto.getName());
     folderEntity.setCreationDate(date);
     folderEntity.setAccessType("admin");
     folderEntity.setUpdateDate(date);

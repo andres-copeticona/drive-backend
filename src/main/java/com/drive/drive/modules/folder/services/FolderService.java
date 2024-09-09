@@ -102,15 +102,15 @@ public class FolderService {
   public ResponseDto<Boolean> createFolder(CreateFolderDto createFolderDto) {
     try {
       Long userId = createFolderDto.getIdUser();
-      Optional<Long> parentFolderId = createFolderDto.getIdParentFolder();
+      Long parentFolderId = createFolderDto.getParentId();
 
       UserEntity user = usuarioRepository.findById(userId).get();
 
       FolderEntity folder = FolderMapper.createDtoToEntity(createFolderDto);
       folder.setUser(user);
 
-      if (parentFolderId != null && parentFolderId.isPresent()) {
-        FolderEntity parentFolder = folderRepository.findById(parentFolderId.get()).get();
+      if (parentFolderId != null) {
+        FolderEntity parentFolder = folderRepository.findById(parentFolderId).get();
         folder.setParentFolder(parentFolder);
       }
 

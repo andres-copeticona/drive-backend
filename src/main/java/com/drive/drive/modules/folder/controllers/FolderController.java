@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springdoc.core.annotations.ParameterObject;
@@ -52,8 +53,8 @@ public class FolderController {
   @PostMapping("/")
   public ResponseEntity<ResponseDto<Boolean>> createFolder(
       @AccessUser UserData userData,
-      @RequestBody CreateFolderDto createFolderDto) {
-    log.info("Creating folder '{}' for user ID {}.", createFolderDto.getFolderName(), userData.getUserId());
+      @Valid @RequestBody CreateFolderDto createFolderDto) {
+    log.info("Creating folder '{}' for user ID {}.", createFolderDto.getName(), userData.getUserId());
     createFolderDto.setIdUser(userData.getUserId());
     var res = folderService.createFolder(createFolderDto);
     return ResponseEntity.status(res.getCode()).body(res);
