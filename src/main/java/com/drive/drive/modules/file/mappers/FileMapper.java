@@ -21,7 +21,7 @@ public class FileMapper {
     newFile.setAccessType(createFilesDto.getAccessType());
     newFile.setPassword(createFilesDto.getPassword());
     newFile.setFolder(folder);
-    newFile.setMinioLink(createFilesDto.getFolderCode() + "/" + code);
+    newFile.setMinioLink(folder.getCode() + "/" + code);
     newFile.setCode(code);
     newFile.setEtag("etag");
     newFile.setDeleted(false);

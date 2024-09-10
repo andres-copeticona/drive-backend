@@ -1,6 +1,11 @@
 package com.drive.drive.shared.services;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -9,7 +14,9 @@ import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.folder.entities.FolderEntity;
 
 import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -73,5 +80,12 @@ public class MinioService {
   public void deleteBucket(String bucketName) throws Exception {
     minioClient.removeObjects(RemoveObjectsArgs.builder().bucket(bucketName).build());
     minioClient.removeBucket(RemoveBucketArgs.builder().bucket(bucketName).build());
+  }
+
+  public InputStream download(String bucketName, String objectName) throws Exception {
+    return minioClient.getObject(GetObjectArgs.builder()
+        .bucket(bucketName)
+        .object(objectName)
+        .build());
   }
 }

@@ -35,6 +35,8 @@ public class FileDto {
 
   private String minioLink;
 
+  private String link;
+
   private String categoria;
 
   private Long size;

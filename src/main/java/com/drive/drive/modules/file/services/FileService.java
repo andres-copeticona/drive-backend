@@ -2,6 +2,7 @@ package com.drive.drive.modules.file.services;
 
 import com.drive.drive.modules.file.dto.CreateFilesDto;
 import com.drive.drive.modules.file.dto.FileDto;
+import com.drive.drive.modules.file.dto.FileFilter;
 import com.drive.drive.modules.file.dto.FileValidator;
 import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.file.mappers.FileMapper;
@@ -13,16 +14,25 @@ import com.drive.drive.shared.services.MinioService;
 import com.drive.drive.shared.services.NotificationService;
 import com.drive.drive.sharing.entity.SharedDocumentEntity;
 import com.drive.drive.sharing.repository.SharingRepository;
+
+import lombok.extern.slf4j.Slf4j;
+
+import com.drive.drive.shared.dto.DownloadDto;
+import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.modules.user.entities.UserEntity;
 import com.drive.drive.modules.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class FileService {
   @Autowired
@@ -43,7 +53,8 @@ public class FileService {
   @Autowired
   private MinioService minioService;
 
-  public ResponseDto<List<FileDto>> uploadMultipleFiles(UserData userData, CreateFilesDto createFilesDto) {
+  public ResponseDto<ListResponseDto<List<FileDto>>> uploadMultipleFiles(UserData userData,
+      CreateFilesDto createFilesDto) {
     try {
       FileValidator fileValidator = new FileValidator();
       Arrays.asList(createFilesDto.getFiles()).forEach(file -> {
@@ -51,7 +62,7 @@ public class FileService {
           throw new IllegalArgumentException("Invalid file type. Only JPG, JPEG, PDF, MP4, and MP3 files are allowed.");
       });
 
-      FolderEntity folder = folderRepository.findByCode(createFilesDto.getFolderCode()).get();
+      FolderEntity folder = folderRepository.findById(createFilesDto.getFolderId()).get();
       UserEntity user = userRepository.findById(userData.getUserId()).get();
       List<FileDto> fileDtos = new ArrayList<>();
 
@@ -62,22 +73,62 @@ public class FileService {
         minioService.addObject(fileEntity, folder, file);
       }
 
-      return new ResponseDto<>(201, fileDtos, "Archivos cargados correctamente");
+      return new ResponseDto<>(201, new ListResponseDto<List<FileDto>>(fileDtos, Long.valueOf(fileDtos.size())),
+          "Archivos cargados correctamente");
     } catch (Exception e) {
       e.printStackTrace();
       return new ResponseDto<>(500, null, "Error al cargar los archivos");
     }
   }
 
-  public ResponseDto<List<FileDto>> listAllFiles() {
+  public ResponseDto<ListResponseDto<List<FileDto>>> listAllFiles(FileFilter filter) {
     try {
-      List<FileEntity> files = fileRepository.findByDeletedFalse();
+      Specification<FileEntity> spec = filter.getSpecification();
+      Sort sort = filter.getSort();
+      Pageable pageable = filter.getPageable();
+
+      List<FileEntity> files;
+      Long total = 0L;
+
+      if (pageable == null) {
+        files = fileRepository.findAll(spec, sort);
+        total = Long.valueOf(files.size());
+      } else {
+        var res = fileRepository.findAll(spec, pageable);
+        files = res.getContent();
+        total = res.getTotalElements();
+      }
 
       List<FileDto> dtos = files.stream().map(FileMapper::FileEntityToDto).collect(Collectors.toList());
-
-      return new ResponseDto<>(200, dtos, "Lista de archivos");
+      return new ResponseDto<>(200, new ListResponseDto<>(dtos, total), "Lista de archivos");
     } catch (Exception e) {
+      log.error("Error listing files: {}", e.getMessage());
       return new ResponseDto<>(500, null, "Error al listar los archivos");
+    }
+  }
+
+  public ResponseDto<FileDto> getFileById(Long fileId) {
+    ResponseDto<FileDto> res = new ResponseDto<FileDto>().setCode(200);
+    try {
+      FileEntity file = fileRepository.findById(fileId).get();
+      FileDto dto = FileMapper.FileEntityToDto(file);
+      dto.setLink(minioService.getDownloadUrl(file.getFolder().getCode(), file.getCode()));
+
+      return res.setData(dto).setMessage("Archivo obtenido correctamente");
+    } catch (Exception e) {
+      log.error("Error getting file by ID {}: {}", fileId, e.getMessage());
+      return res.setCode(500).setMessage("Error al obtener el archivo");
+    }
+  }
+
+  public DownloadDto download(Long fileId) {
+    try {
+      FileEntity file = fileRepository.findById(fileId).get();
+      byte[] data = minioService.download(file.getFolder().getCode(), file.getCode()).readAllBytes();
+      return new DownloadDto(file.getTitle(), data);
+    } catch (Exception e) {
+      log.error("Error downloading file by ID {}: {}", fileId, e.getMessage());
+      return null;
     }
   }
 

@@ -6,6 +6,7 @@ import com.drive.drive.modules.folder.dto.FolderDto;
 import com.drive.drive.modules.folder.dto.FolderFilter;
 import com.drive.drive.security.AccessUser;
 import com.drive.drive.security.UserData;
+import com.drive.drive.shared.dto.DownloadDto;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 @Slf4j
@@ -58,6 +60,40 @@ public class FolderController {
     createFolderDto.setIdUser(userData.getUserId());
     var res = folderService.createFolder(createFolderDto);
     return ResponseEntity.status(res.getCode()).body(res);
+  }
+
+  @Operation(summary = "Get breadcrumb for a folder")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Breadcrumb fetched successfully."),
+      @ApiResponse(responseCode = "500", description = "Error fetching breadcrumb.")
+  })
+  @GetMapping("/{id}/breadcrumb")
+  public ResponseEntity<ResponseDto<List<FolderDto>>> getBreadcrumb(
+      @Parameter(description = "ID of the folder") @PathVariable Long id) {
+    ResponseDto<List<FolderDto>> response = folderService.getBreadcrumb(id);
+    return ResponseEntity.status(response.getCode()).body(response);
+  }
+
+  @Operation(summary = "Download a folder")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Folder downloaded successfully."),
+      @ApiResponse(responseCode = "500", description = "Error trying to downlod the folder.")
+  })
+  @GetMapping("/{id}/download")
+  public ResponseEntity<byte[]> downloadBucketContents(
+      @Parameter(description = "ID of the folder") @PathVariable Long id) {
+    DownloadDto res = folderService.download(id);
+
+    if (res == null)
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+    headers.setContentDisposition(ContentDisposition.builder("attachment")
+        .filename(res.getName())
+        .build());
+    return new ResponseEntity<>(res.getData(), headers, HttpStatus.OK);
+
   }
 
   @Operation(summary = "Delete a folder")
@@ -189,28 +225,4 @@ public class FolderController {
   // "Carpetas compartidas con el usuario obtenidas.");
   // return ResponseEntity.ok(response);
   // }
-  //
-  // @GetMapping("/download/{bucketName}")
-  // public ResponseEntity<byte[]> downloadBucketContents(@PathVariable String
-  // bucketName) {
-  // try {
-  // ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-  // folderService.downloadBucketContents(bucketName, byteArrayOutputStream);
-  //
-  // byte[] zipContent = byteArrayOutputStream.toByteArray();
-  //
-  // HttpHeaders headers = new HttpHeaders();
-  // headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-  // headers.setContentDisposition(ContentDisposition.builder("attachment")
-  // .filename(bucketName + ".zip")
-  // .build());
-  //
-  // return new ResponseEntity<>(zipContent, headers, HttpStatus.OK);
-  // } catch (Exception e) {
-  // log.error("Error downloading bucket '{}': {}", bucketName, e.getMessage());
-  // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-  // .body(null);
-  // }
-  // }
-
 }

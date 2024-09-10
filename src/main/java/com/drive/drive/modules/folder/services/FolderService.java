@@ -11,6 +11,7 @@ import com.drive.drive.modules.folder.dto.FolderFilter;
 import com.drive.drive.modules.folder.entities.FolderEntity;
 import com.drive.drive.modules.folder.mappers.FolderMapper;
 import com.drive.drive.modules.folder.repositories.FolderRepository;
+import com.drive.drive.shared.dto.DownloadDto;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.services.MinioService;
@@ -34,6 +35,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -96,6 +99,82 @@ public class FolderService {
     } catch (Exception e) {
       log.error(e.getMessage());
       return new ResponseDto<>(500, null, "Error obteniendo la lista de carpetas, " + e.getMessage());
+    }
+  }
+
+  public ResponseDto<List<FolderDto>> getBreadcrumb(Long folderId) {
+    try {
+      List<FolderEntity> breadcrumb = new ArrayList<>();
+      Optional<FolderEntity> currentFolderOpt = folderRepository.findById(folderId);
+
+      if (currentFolderOpt.isPresent()) {
+        FolderEntity currentFolder = currentFolderOpt.get();
+        breadcrumb.add(currentFolder);
+        while (currentFolder.getParentFolder() != null) {
+          currentFolder = currentFolder.getParentFolder();
+          breadcrumb.add(currentFolder);
+        }
+      }
+
+      List<FolderDto> dtos = breadcrumb.stream()
+          .map(FolderMapper::entityToDto)
+          .collect(Collectors.toList());
+      List<FolderDto> reversedBreadcrumb = new ArrayList<>();
+      for (int i = dtos.size() - 1; i >= 0; i--) {
+        reversedBreadcrumb.add(dtos.get(i));
+      }
+
+      return new ResponseDto<>(200, reversedBreadcrumb, "Breadcrumb obtenido correctamente.");
+    } catch (Exception e) {
+      return new ResponseDto<>(500, null, "Error obteniendo el breadcrumb, " + e.getMessage());
+    }
+  }
+
+  public DownloadDto download(Long folderId) {
+    try {
+      FolderEntity folder = folderRepository.findById(folderId).get();
+
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ZipOutputStream zipOut = new ZipOutputStream(baos);
+
+      DownloadDto downloadDto = new DownloadDto();
+      downloadDto.setName(folder.getName() + ".zip");
+      downloadFolderContents(folder, "", zipOut);
+      zipOut.close();
+      downloadDto.setData(baos.toByteArray());
+
+      return downloadDto;
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      return null;
+    }
+  }
+
+  private void downloadFolderContents(FolderEntity folder, String parentPath, ZipOutputStream zipOut) {
+    try {
+      List<FileEntity> files = fileRepository.findByFolder_Id(folder.getId());
+
+      for (FileEntity file : files) {
+        try (InputStream stream = minioService.download(folder.getCode(), file.getCode())) {
+          String fileName = parentPath + file.getTitle();
+          ZipEntry zipEntry = new ZipEntry(fileName);
+          zipOut.putNextEntry(zipEntry);
+          byte[] bytes = new byte[1024];
+          int length;
+          while ((length = stream.read(bytes)) >= 0) {
+            zipOut.write(bytes, 0, length);
+          }
+          zipOut.closeEntry();
+        }
+      }
+
+      List<FolderEntity> subFolders = folderRepository.findByParentFolder_Id(folder.getId());
+      for (FolderEntity subFolder : subFolders) {
+        downloadFolderContents(subFolder, parentPath + subFolder.getName() + "/", zipOut);
+      }
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      throw new RuntimeException("Error al descargar el contenido de la carpeta: " + e.getMessage(), e);
     }
   }
 
@@ -338,126 +417,137 @@ public class FolderService {
   }
 
   // generar el link de folder
-  public List<String> generateSharedFolderLinks(Long folderId, Long userId) {
-    List<String> links = new ArrayList<>();
-    try {
-      FolderEntity folder = folderRepository.findById(folderId)
-          .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " + folderId));
-
-      // Generar enlaces para los archivos en la carpeta actual
-      links.addAll(generateLinksForFolder(folder));
-
-      // Recorrer las subcarpetas y generar enlaces recursivamente
-      List<FolderEntity> subfolders = folderRepository.findByParentFolder_IdAndDeletedFalse(folderId);
-      for (FolderEntity subfolder : subfolders) {
-        links.addAll(generateSharedFolderLinks(subfolder.getId(), userId));
-      }
-
-    } catch (Exception e) {
-      throw new RuntimeException("Error al generar enlaces para la carpeta: " + e.getMessage(), e);
-    }
-    return links;
-  }
+  // public List<String> generateSharedFolderLinks(Long folderId, Long userId) {
+  // List<String> links = new ArrayList<>();
+  // try {
+  // FolderEntity folder = folderRepository.findById(folderId)
+  // .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " +
+  // folderId));
+  //
+  // // Generar enlaces para los archivos en la carpeta actual
+  // links.addAll(generateLinksForFolder(folder));
+  //
+  // // Recorrer las subcarpetas y generar enlaces recursivamente
+  // List<FolderEntity> subfolders =
+  // folderRepository.findByParentFolder_IdAndDeletedFalse(folderId);
+  // for (FolderEntity subfolder : subfolders) {
+  // links.addAll(generateSharedFolderLinks(subfolder.getId(), userId));
+  // }
+  //
+  // } catch (Exception e) {
+  // throw new RuntimeException("Error al generar enlaces para la carpeta: " +
+  // e.getMessage(), e);
+  // }
+  // return links;
+  // }
 
   // gerear el link de los folders
-  private List<String> generateLinksForFolder(FolderEntity folder) {
-    List<String> links = new ArrayList<>();
-    try {
-      String bucketName = folder.getName();
-      System.out.println("Bucket Name: " + bucketName);
-
-      Iterable<Result<Item>> items = minioClient.listObjects(
-          ListObjectsArgs.builder()
-              .bucket(bucketName)
-              .build());
-
-      for (Result<Item> result : items) {
-        Item item = result.get();
-        System.out.println("Found item: " + item.objectName());
-
-        String presignedUrl = minioClient.getPresignedObjectUrl(
-            GetPresignedObjectUrlArgs.builder()
-                .method(Method.GET)
-                .bucket(bucketName)
-                .object(item.objectName())
-                .expiry(7, TimeUnit.DAYS)
-                .build());
-        links.add(presignedUrl);
-        System.out.println("Generated URL: " + presignedUrl);
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Error al generar enlaces para la carpeta: " + e.getMessage(), e);
-    }
-    return links;
-  }
+  // private List<String> generateLinksForFolder(FolderEntity folder) {
+  // List<String> links = new ArrayList<>();
+  // try {
+  // String bucketName = folder.getName();
+  // System.out.println("Bucket Name: " + bucketName);
+  //
+  // Iterable<Result<Item>> items = minioClient.listObjects(
+  // ListObjectsArgs.builder()
+  // .bucket(bucketName)
+  // .build());
+  //
+  // for (Result<Item> result : items) {
+  // Item item = result.get();
+  // System.out.println("Found item: " + item.objectName());
+  //
+  // String presignedUrl = minioClient.getPresignedObjectUrl(
+  // GetPresignedObjectUrlArgs.builder()
+  // .method(Method.GET)
+  // .bucket(bucketName)
+  // .object(item.objectName())
+  // .expiry(7, TimeUnit.DAYS)
+  // .build());
+  // links.add(presignedUrl);
+  // System.out.println("Generated URL: " + presignedUrl);
+  // }
+  // } catch (Exception e) {
+  // throw new RuntimeException("Error al generar enlaces para la carpeta: " +
+  // e.getMessage(), e);
+  // }
+  // return links;
+  // }
 
   // generar el link de los folders por deppendencia
-  public List<FolderDto> getSharedFoldersByDependency(String dependencyName) {
-    // Obtener las carpetas compartidas con usuarios de la dependencia especificada
-    List<SharedFolder> sharedFolders = sharedFolderRepository.findByReceptorDependencia(dependencyName);
-
-    // Convertir las carpetas compartidas a DTOs
-    Set<FolderDto> folderDtos = sharedFolders.stream()
-        .map(sharedFolder -> convertToDtos(sharedFolder.getFolder()))
-        .collect(Collectors.toSet());
-
-    return new ArrayList<>(folderDtos);
-  }
+  // public List<FolderDto> getSharedFoldersByDependency(String dependencyName) {
+  // // Obtener las carpetas compartidas con usuarios de la dependencia
+  // especificada
+  // List<SharedFolder> sharedFolders =
+  // sharedFolderRepository.findByReceptorDependencia(dependencyName);
+  //
+  // // Convertir las carpetas compartidas a DTOs
+  // Set<FolderDto> folderDtos = sharedFolders.stream()
+  // .map(sharedFolder -> convertToDtos(sharedFolder.getFolder()))
+  // .collect(Collectors.toSet());
+  //
+  // return new ArrayList<>(folderDtos);
+  // }
 
   // conversion a dto de los datos json
-  private FolderDto convertToDtos(FolderEntity folder) {
-    FolderDto folderDto = new FolderDto();
-    folderDto.setId(folder.getId());
-    folderDto.setName(folder.getName());
-    folderDto.setAccessType(folder.getAccessType());
-    folderDto.setCreationDate(folder.getCreationDate());
-    folderDto.setUpdateDate(folder.getUpdateDate());
-    folderDto.setDeleted(folder.getDeleted());
-    folderDto.setUserId(folder.getUser().getId());
-    folderDto.setParentFolderId(folder.getParentFolder() != null ? folder.getParentFolder().getId() : null);
-    return folderDto;
-  }
+  // private FolderDto convertToDtos(FolderEntity folder) {
+  // FolderDto folderDto = new FolderDto();
+  // folderDto.setId(folder.getId());
+  // folderDto.setName(folder.getName());
+  // folderDto.setAccessType(folder.getAccessType());
+  // folderDto.setCreationDate(folder.getCreationDate());
+  // folderDto.setUpdateDate(folder.getUpdateDate());
+  // folderDto.setDeleted(folder.getDeleted());
+  // folderDto.setUserId(folder.getUser().getId());
+  // folderDto.setParentFolderId(folder.getParentFolder() != null ?
+  // folder.getParentFolder().getId() : null);
+  // return folderDto;
+  // }
 
   // Método para obtener carpetas compartidas con un usuario específico
-  public List<FolderDto> getSharedFoldersWithUser(Long userId) {
-    List<SharedFolder> sharedFoldersByUser = sharedFolderRepository.findByReceptor_id(userId);
-    Set<FolderDto> sharedFolders = new HashSet<>();
-
-    sharedFoldersByUser.forEach(sharedFolder -> sharedFolders.add(FolderMapper.entityToDto(sharedFolder.getFolder())));
-
-    return new ArrayList<>(sharedFolders);
-  }
+  // public List<FolderDto> getSharedFoldersWithUser(Long userId) {
+  // List<SharedFolder> sharedFoldersByUser =
+  // sharedFolderRepository.findByReceptor_id(userId);
+  // Set<FolderDto> sharedFolders = new HashSet<>();
+  //
+  // sharedFoldersByUser.forEach(sharedFolder ->
+  // sharedFolders.add(FolderMapper.entityToDto(sharedFolder.getFolder())));
+  //
+  // return new ArrayList<>(sharedFolders);
+  // }
 
   // Método para descargar el contenido de un bucket
-  public void downloadBucketContents(String bucketName, OutputStream outputStream) throws IOException {
-    ZipOutputStream zipOut = new ZipOutputStream(outputStream);
-    try {
-      Iterable<Result<Item>> objects = minioClient.listObjects(
-          ListObjectsArgs.builder().bucket(bucketName).build());
-
-      for (Result<Item> objectResult : objects) {
-        Item item = objectResult.get();
-        InputStream stream = minioClient.getObject(
-            GetObjectArgs.builder()
-                .bucket(bucketName)
-                .object(item.objectName())
-                .build());
-
-        ZipEntry zipEntry = new ZipEntry(item.objectName());
-        zipOut.putNextEntry(zipEntry);
-
-        byte[] bytes = new byte[1024];
-        int length;
-        while ((length = stream.read(bytes)) >= 0) {
-          zipOut.write(bytes, 0, length);
-        }
-        stream.close();
-        zipOut.closeEntry();
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to download bucket: " + e.getMessage(), e);
-    } finally {
-      zipOut.close();
-    }
-  }
+  // public void downloadBucketContents(String bucketName, OutputStream
+  // outputStream) throws IOException {
+  // ZipOutputStream zipOut = new ZipOutputStream(outputStream);
+  // try {
+  // Iterable<Result<Item>> objects = minioClient.listObjects(
+  // ListObjectsArgs.builder().bucket(bucketName).build());
+  //
+  // for (Result<Item> objectResult : objects) {
+  // Item item = objectResult.get();
+  // InputStream stream = minioClient.getObject(
+  // GetObjectArgs.builder()
+  // .bucket(bucketName)
+  // .object(item.objectName())
+  // .build());
+  //
+  // ZipEntry zipEntry = new ZipEntry(item.objectName());
+  // zipOut.putNextEntry(zipEntry);
+  //
+  // byte[] bytes = new byte[1024];
+  // int length;
+  // while ((length = stream.read(bytes)) >= 0) {
+  // zipOut.write(bytes, 0, length);
+  // }
+  // stream.close();
+  // zipOut.closeEntry();
+  // }
+  // } catch (Exception e) {
+  // throw new RuntimeException("Failed to download bucket: " + e.getMessage(),
+  // e);
+  // } finally {
+  // zipOut.close();
+  // }
+  // }
 }

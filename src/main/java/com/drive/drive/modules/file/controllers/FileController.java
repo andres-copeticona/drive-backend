@@ -3,18 +3,26 @@ package com.drive.drive.modules.file.controllers;
 import com.drive.drive.modules.file.services.FileService;
 import com.drive.drive.modules.file.dto.CreateFilesDto;
 import com.drive.drive.modules.file.dto.FileDto;
+import com.drive.drive.modules.file.dto.FileFilter;
 import com.drive.drive.security.AccessUser;
 import com.drive.drive.security.UserData;
+import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,10 +41,40 @@ public class FileController {
       @ApiResponse(responseCode = "500", description = "Failed to fetch")
   })
   @GetMapping("/")
-  public ResponseEntity<ResponseDto<List<FileDto>>> listAllFiles() {
+  public ResponseEntity<ResponseDto<ListResponseDto<List<FileDto>>>> listAllFiles(
+      @Valid @Parameter(description = "File filter") @ParameterObject FileFilter filter) {
     log.info("Fetching all files...");
-    var files = fileService.listAllFiles();
+    ResponseDto<ListResponseDto<List<FileDto>>> files = fileService.listAllFiles(filter);
     return ResponseEntity.status(files.getCode()).body(files);
+  }
+
+  @Operation(summary = "Get file by ID")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully fetched file by ID"),
+      @ApiResponse(responseCode = "500", description = "Failed to fetch the file")
+  })
+  @GetMapping("/{id}")
+  public ResponseEntity<ResponseDto<FileDto>> getFileById(@PathVariable Long id) {
+    log.info("Fetching file with id: {}...", id);
+    ResponseDto<FileDto> res = fileService.getFileById(id);
+    return ResponseEntity.status(res.getCode()).body(res);
+  }
+
+  @Operation(summary = "Download file by ID")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully downloaded file by ID"),
+      @ApiResponse(responseCode = "500", description = "Failed to download the file")
+  })
+  @GetMapping("/{id}/download")
+  public ResponseEntity<byte[]> download(@PathVariable Long id) {
+    log.info("Download file with id: {}...", id);
+    var res = fileService.download(id);
+    if (res == null)
+      return ResponseEntity.status(500).body(null);
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + res.getName());
+    return new ResponseEntity<>(res.getData(), headers, HttpStatus.OK);
   }
 
   @Operation(summary = "Upload a file")
@@ -45,8 +83,8 @@ public class FileController {
       @ApiResponse(responseCode = "500", description = "Failed to upload")
   })
   @PostMapping(path = "/upload", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-  public ResponseEntity<ResponseDto<List<FileDto>>> uploadFiles(@AccessUser UserData userData,
-      @ModelAttribute CreateFilesDto createFilesDto) {
+  public ResponseEntity<ResponseDto<ListResponseDto<List<FileDto>>>> uploadFiles(@AccessUser UserData userData,
+      @Valid @ModelAttribute CreateFilesDto createFilesDto) {
     log.info("Uploading files...");
     var uploadedFiles = fileService.uploadMultipleFiles(userData, createFilesDto);
     return ResponseEntity.status(uploadedFiles.getCode()).body(uploadedFiles);
@@ -92,32 +130,6 @@ public class FileController {
   // Map<String, String> response = new HashMap<>();
   // response.put("message", "Error al compartir el archivo: " + e.getMessage());
   // return ResponseEntity.badRequest().body(response);
-  // }
-  // }
-
-  // listar los documentos por usuario y carpeta
-  // @GetMapping("/list/{userId}/{folderId}")
-  // public ResponseEntity<FolderContentsDto>
-  // listFilesByUserAndFolder(@PathVariable Long userId,
-  // @PathVariable Long folderId) {
-  // try {
-  // FolderContentsDto contents = fileBl.listFilesByUserAndFolder(userId,
-  // folderId);
-  // return ResponseEntity.ok(contents);
-  // } catch (Exception e) {
-  // log.error("Error listing files and folders: {}", e.getMessage());
-  // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-  // }
-  // }
-
-  // obtener el archivo por id
-  // @GetMapping("/{id}")
-  // public ResponseEntity<FileDto> getFileById(@PathVariable Long id) {
-  // FileDto fileDto = fileBl.getFileById(id);
-  // if (fileDto != null) {
-  // return ResponseEntity.ok(fileDto);
-  // } else {
-  // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
   // }
   // }
 

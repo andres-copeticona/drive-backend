@@ -2,12 +2,15 @@ package com.drive.drive.modules.file.repositories;
 
 import com.drive.drive.modules.file.entities.FileEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 
-public interface FileRepository extends JpaRepository<FileEntity, Long> {
+public interface FileRepository extends JpaRepository<FileEntity, Long>, JpaSpecificationExecutor<FileEntity> {
   // find by user id
   List<FileEntity> findByDeletedFalse();
+
+  List<FileEntity> findByFolder_Id(Long folderId);
 
   // find by user id
   List<FileEntity> findByUser_idAndFolder_IdAndDeletedFalse(Long userId, Long folderId);

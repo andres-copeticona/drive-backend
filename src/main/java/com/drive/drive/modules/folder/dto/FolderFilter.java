@@ -1,5 +1,6 @@
 package com.drive.drive.modules.folder.dto;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.drive.drive.modules.folder.entities.FolderEntity;
@@ -17,10 +18,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FolderFilter extends BaseFilter<FolderEntity> {
-  @Parameter(description = "User that created the folder", example = "1", required = false)
+  @Parameter(description = "User that upload the file", example = "1", required = false)
   private Long createdBy;
 
-  @Parameter(description = "Parent id", example = "1", required = false)
+  @Parameter(description = "Folder id", example = "1", required = true)
+  @NotNull
   private Long parentId;
 
   @Override
