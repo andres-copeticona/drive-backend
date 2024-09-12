@@ -37,4 +37,12 @@ public class NotificationService {
       notificacionBl.crearNotificacionCompartir(userId, titulo, mensaje, "eliminado");
     }
   }
+
+  public void sendShareFolderNotification(List<Long> userIds, String folderName, String emisorName) {
+    String titulo = "Carpeta Compartida";
+    String mensaje = "Has recibido acceso a la carpeta '" + folderName + "' ha sido compartida por " + emisorName + ".";
+    for (Long userId : userIds) {
+      notificacionBl.crearNotificacionCompartir(userId, titulo, mensaje, "compartido");
+    }
+  }
 }

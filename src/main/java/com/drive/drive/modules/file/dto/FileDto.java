@@ -42,4 +42,6 @@ public class FileDto {
   private Long size;
 
   private String fileType;
+
+  private String code;
 }

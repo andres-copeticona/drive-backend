@@ -8,6 +8,7 @@ import com.drive.drive.modules.file.dto.CreateFilesDto;
 import com.drive.drive.modules.file.dto.FileDto;
 import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.folder.entities.FolderEntity;
+import com.drive.drive.shared.utils.PasswordUtil;
 
 public class FileMapper {
 
@@ -19,7 +20,8 @@ public class FileMapper {
     FileEntity newFile = new FileEntity();
     newFile.setTitle(file.getOriginalFilename());
     newFile.setAccessType(createFilesDto.getAccessType());
-    newFile.setPassword(createFilesDto.getPassword());
+    if (createFilesDto.getPassword() != null)
+      newFile.setPassword(PasswordUtil.hashPassword(createFilesDto.getPassword()));
     newFile.setFolder(folder);
     newFile.setMinioLink(folder.getCode() + "/" + code);
     newFile.setCode(code);
@@ -44,6 +46,7 @@ public class FileMapper {
     fileDto.setFolderId(file.getFolder().getId());
     fileDto.setMinioLink(file.getMinioLink());
     fileDto.setCategoria(file.getCategoria());
+    fileDto.setCode(file.getCode());
     fileDto.setSize(file.getSize());
     fileDto.setFileType(file.getFileType());
     fileDto.setDeleted(file.getDeleted());

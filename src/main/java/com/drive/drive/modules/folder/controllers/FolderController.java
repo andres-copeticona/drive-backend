@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 @Slf4j
@@ -61,6 +60,23 @@ public class FolderController {
     var res = folderService.createFolder(createFolderDto);
     return ResponseEntity.status(res.getCode()).body(res);
   }
+
+  // @Operation(summary = "Share a folder")
+  // @ApiResponses(value = {
+  // @ApiResponse(responseCode = "200", description = "Folder shared
+  // successfully."),
+  // @ApiResponse(responseCode = "500", description = "Error sharing folder")
+  // })
+  // @PostMapping("/share")
+  // public ResponseEntity<ResponseDto<Boolean>> share(
+  // @AccessUser UserData userData,
+  // @Valid @RequestBody ShareFolderDto shareFolderDto) {
+  // log.info("Sharing folder '{}' with user ID {}.",
+  // shareFolderDto.getFolderId(), userData.getReceptorId());
+  // shareFolderDto.setEmisorId(userData.getUserId());
+  // var res = folderService.share(shareFolderDto);
+  // return ResponseEntity.status(res.getCode()).body(res);
+  // }
 
   @Operation(summary = "Get breadcrumb for a folder")
   @ApiResponses(value = {

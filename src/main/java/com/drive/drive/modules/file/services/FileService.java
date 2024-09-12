@@ -1,5 +1,6 @@
 package com.drive.drive.modules.file.services;
 
+import com.drive.drive.modules.file.dto.CheckPasswordDto;
 import com.drive.drive.modules.file.dto.CreateFilesDto;
 import com.drive.drive.modules.file.dto.FileDto;
 import com.drive.drive.modules.file.dto.FileFilter;
@@ -12,6 +13,7 @@ import com.drive.drive.modules.folder.repositories.FolderRepository;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.services.MinioService;
 import com.drive.drive.shared.services.NotificationService;
+import com.drive.drive.shared.utils.PasswordUtil;
 import com.drive.drive.sharing.entity.SharedDocumentEntity;
 import com.drive.drive.sharing.repository.SharingRepository;
 
@@ -129,6 +131,23 @@ public class FileService {
     } catch (Exception e) {
       log.error("Error downloading file by ID {}: {}", fileId, e.getMessage());
       return null;
+    }
+  }
+
+  public ResponseDto<Boolean> checkPassword(CheckPasswordDto checkPasswordDto) {
+    try {
+      FileEntity file = fileRepository.findById(checkPasswordDto.getFileId()).get();
+
+      if (file.getPassword() == null)
+        throw new IllegalArgumentException("El archivo no tiene contraseña");
+
+      if (!PasswordUtil.checkPassword(checkPasswordDto.getPassword(), file.getPassword()))
+        return new ResponseDto<>(403, false, "Contraseña incorrecta");
+
+      return new ResponseDto<>(200, true, "Contraseña verificada correctamente");
+    } catch (Exception e) {
+      log.error("Error trying to check the password for file {}: {}", checkPasswordDto.getFileId(), e.getMessage());
+      return new ResponseDto<>(500, false, "Error al verificar la contraseña");
     }
   }
 

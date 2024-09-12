@@ -1,10 +1,9 @@
 package com.drive.drive.modules.file.controllers;
 
 import com.drive.drive.modules.file.services.FileService;
-import com.drive.drive.modules.file.dto.CreateFilesDto;
-import com.drive.drive.modules.file.dto.FileDto;
-import com.drive.drive.modules.file.dto.FileFilter;
+import com.drive.drive.modules.file.dto.*;
 import com.drive.drive.security.AccessUser;
+import com.drive.drive.security.IsPublic;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
@@ -60,6 +59,21 @@ public class FileController {
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
+  // TODO: get file with public code
+  // @Operation(summary = "Get file by ID")
+  // @ApiResponses(value = {
+  // @ApiResponse(responseCode = "200", description = "Successfully fetched file
+  // by ID"),
+  // @ApiResponse(responseCode = "500", description = "Failed to fetch the file")
+  // })
+  // @GetMapping("/public/{code}")
+  // public ResponseEntity<ResponseDto<FileDto>> getFileById(@PathVariable Long
+  // id) {
+  // log.info("Fetching file with id: {}...", id);
+  // ResponseDto<FileDto> res = fileService.getFileById(id);
+  // return ResponseEntity.status(res.getCode()).body(res);
+  // }
+
   @Operation(summary = "Download file by ID")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Successfully downloaded file by ID"),
@@ -75,6 +89,22 @@ public class FileController {
     HttpHeaders headers = new HttpHeaders();
     headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + res.getName());
     return new ResponseEntity<>(res.getData(), headers, HttpStatus.OK);
+  }
+
+  @Operation(summary = "Check password of file")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Valid password"),
+      @ApiResponse(responseCode = "403", description = "Invalid password"),
+      @ApiResponse(responseCode = "500", description = "Error checking password")
+  })
+  @PostMapping("/{id}/check-password")
+  public ResponseEntity<ResponseDto<Boolean>> checkPassword(
+      @PathVariable Long id,
+      @Valid @RequestBody CheckPasswordDto checkPasswordDto) {
+    log.info("Check password for file with id: {}...", id);
+    checkPasswordDto.setFileId(id);
+    var res = fileService.checkPassword(checkPasswordDto);
+    return ResponseEntity.status(res.getCode()).body(res);
   }
 
   @Operation(summary = "Upload a file")

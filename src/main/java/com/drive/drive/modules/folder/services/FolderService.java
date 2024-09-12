@@ -1,6 +1,5 @@
 package com.drive.drive.modules.folder.services;
 
-import com.drive.drive.audit.bl.NotificacionBl;
 import com.drive.drive.modules.file.dto.FileDto;
 import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.file.repositories.FileRepository;
@@ -9,23 +8,19 @@ import com.drive.drive.modules.folder.dto.FolderContentsDto;
 import com.drive.drive.modules.folder.dto.FolderDto;
 import com.drive.drive.modules.folder.dto.FolderFilter;
 import com.drive.drive.modules.folder.entities.FolderEntity;
+import com.drive.drive.modules.folder.entities.SharedFolderEntity;
 import com.drive.drive.modules.folder.mappers.FolderMapper;
 import com.drive.drive.modules.folder.repositories.FolderRepository;
+import com.drive.drive.modules.folder.repositories.SharedFolderRepository;
 import com.drive.drive.shared.dto.DownloadDto;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.services.MinioService;
 import com.drive.drive.shared.services.NotificationService;
-import com.drive.drive.sharing.entity.SharedFolder;
-import com.drive.drive.sharing.repository.SharedFolderRepository;
 import com.drive.drive.modules.user.dto.UserDto;
 import com.drive.drive.modules.user.entities.UserEntity;
 import com.drive.drive.modules.user.mappers.UserMapper;
 import com.drive.drive.modules.user.repositories.UserRepository;
-import io.minio.*;
-import io.minio.errors.MinioException;
-import io.minio.http.Method;
-import io.minio.messages.Item;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,14 +31,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -51,9 +40,6 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 @Service
 public class FolderService {
-
-  @Autowired
-  private MinioClient minioClient;
 
   @Autowired
   private NotificationService notificationService;
@@ -72,9 +58,6 @@ public class FolderService {
 
   @Autowired
   private SharedFolderRepository sharedFolderRepository;
-
-  @Autowired
-  private NotificacionBl notificacionBl;
 
   public ResponseDto<ListResponseDto<List<FolderDto>>> listFolders(FolderFilter filter) {
     try {
@@ -231,79 +214,83 @@ public class FolderService {
     }
   }
 
-  public void shareFolder(Long folderId, Long emisorId, Long receptorId) {
-    UserEntity emisor = usuarioRepository.findById(emisorId)
-        .orElseThrow(() -> new RuntimeException("UserEntity emisor no encontrado con ID: " + emisorId));
-    UserEntity receptor = usuarioRepository.findById(receptorId)
-        .orElseThrow(() -> new RuntimeException("UserEntity receptor no encontrado con ID: " + receptorId));
-    FolderEntity folder = folderRepository.findById(folderId)
-        .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " + folderId));
-
-    SharedFolder sharedFolder = new SharedFolder();
-    sharedFolder.setFolder(folder);
-    sharedFolder.setEmisor(emisor);
-    sharedFolder.setReceptor(receptor);
-    sharedFolder.setSharedAt(new Date());
-
-    sharedFolderRepository.save(sharedFolder);
-
-    // Notificar al receptor sobre la carpeta compartida
-    notificacionBl.crearNotificacionCompartir(receptorId,
-        "Carpeta Compartida",
-        "Has recibido acceso a la carpeta '" + folder.getName() + "' de " + emisor.getNames() + " "
-            + emisor.getFirstSurname(),
-        "compartida");
-  }
+  // public void shareFolder(Long folderId, Long emisorId, Long receptorId) {
+  // UserEntity emisor = usuarioRepository.findById(emisorId)
+  // .orElseThrow(() -> new RuntimeException("UserEntity emisor no encontrado con
+  // ID: " + emisorId));
+  // UserEntity receptor = usuarioRepository.findById(receptorId)
+  // .orElseThrow(() -> new RuntimeException("UserEntity receptor no encontrado
+  // con ID: " + receptorId));
+  // FolderEntity folder = folderRepository.findById(folderId)
+  // .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " +
+  // folderId));
+  //
+  // SharedFolderEntity sharedFolder = new SharedFolderEntity();
+  // sharedFolder.setFolder(folder);
+  // sharedFolder.setEmisor(emisor);
+  // sharedFolder.setReceptor(receptor);
+  // sharedFolder.setSharedAt(new Date());
+  //
+  // sharedFolderRepository.save(sharedFolder);
+  //
+  // // Notificar al receptor sobre la carpeta compartida
+  // notificacionBl.crearNotificacionCompartir(receptorId,
+  // "Carpeta Compartida",
+  // "Has recibido acceso a la carpeta '" + folder.getName() + "' de " +
+  // emisor.getNames() + " "
+  // + emisor.getFirstSurname(),
+  // "compartida");
+  // }
 
   //
-  public String getDownloadUrl(String etag, String bucket) {
-    try {
-      String bucketName = bucket;
-
-      Iterable<Result<Item>> myObjects = minioClient.listObjects(
-          ListObjectsArgs.builder()
-              .bucket(bucketName)
-              .build());
-
-      for (Result<Item> result : myObjects) {
-        Item item = result.get();
-        String etag1 = item.etag().substring(1, item.etag().length() - 1);
-
-        if (etag1.equals(etag)) {
-          return minioClient.getPresignedObjectUrl(
-              GetPresignedObjectUrlArgs.builder()
-                  .method(Method.GET)
-                  .bucket(bucketName)
-                  .object(item.objectName())
-                  .expiry(1, TimeUnit.HOURS)
-                  .build());
-        }
-      }
-      return "No se encontro el archivo";
-    } catch (MinioException e) {
-      e.printStackTrace();
-      return "Error getting file URL: " + e.getMessage();
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    } catch (InvalidKeyException e) {
-      throw new RuntimeException(e);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  // public String getDownloadUrl(String etag, String bucket) {
+  // try {
+  // String bucketName = bucket;
+  //
+  // Iterable<Result<Item>> myObjects = minioClient.listObjects(
+  // ListObjectsArgs.builder()
+  // .bucket(bucketName)
+  // .build());
+  //
+  // for (Result<Item> result : myObjects) {
+  // Item item = result.get();
+  // String etag1 = item.etag().substring(1, item.etag().length() - 1);
+  //
+  // if (etag1.equals(etag)) {
+  // return minioClient.getPresignedObjectUrl(
+  // GetPresignedObjectUrlArgs.builder()
+  // .method(Method.GET)
+  // .bucket(bucketName)
+  // .object(item.objectName())
+  // .expiry(1, TimeUnit.HOURS)
+  // .build());
+  // }
+  // }
+  // return "No se encontro el archivo";
+  // } catch (MinioException e) {
+  // e.printStackTrace();
+  // return "Error getting file URL: " + e.getMessage();
+  // } catch (NoSuchAlgorithmException e) {
+  // throw new RuntimeException(e);
+  // } catch (InvalidKeyException e) {
+  // throw new RuntimeException(e);
+  // } catch (IOException e) {
+  // throw new RuntimeException(e);
+  // }
+  // }
 
   // Método para listar las carpetas compartidas de un usuario
   public List<FolderDto> listSharedFolders(Long userId) {
     Map<Long, FolderDto> uniqueFolders = new HashMap<>();
 
     // Procesar carpetas recibidas
-    List<SharedFolder> receivedFolders = sharedFolderRepository.findByReceptor_id(userId);
+    List<SharedFolderEntity> receivedFolders = sharedFolderRepository.findByReceptor_id(userId);
     receivedFolders.forEach(
         sharedFolder -> uniqueFolders.put(sharedFolder.getFolder().getId(),
             FolderMapper.entityToDto(sharedFolder.getFolder())));
 
     // Procesar carpetas enviadas
-    List<SharedFolder> sentFolders = sharedFolderRepository.findByEmisor_id(userId);
+    List<SharedFolderEntity> sentFolders = sharedFolderRepository.findByEmisor_id(userId);
     sentFolders.forEach(
         sharedFolder -> uniqueFolders.put(sharedFolder.getFolder().getId(),
             FolderMapper.entityToDto(sharedFolder.getFolder())));
@@ -358,10 +345,10 @@ public class FolderService {
 
   // Método para listar los usuarios con acceso a una carpeta
   public List<UserDto> listUsersWithAccessToFolder(Long folderId) {
-    List<SharedFolder> sharedFolders = sharedFolderRepository.findByFolder_Id(folderId);
+    List<SharedFolderEntity> sharedFolders = sharedFolderRepository.findByFolder_Id(folderId);
     List<UserDto> usersWithAccess = new ArrayList<>();
 
-    for (SharedFolder sharedFolder : sharedFolders) {
+    for (SharedFolderEntity sharedFolder : sharedFolders) {
       UserEntity receptor = sharedFolder.getReceptor();
       UserDto dto = UserMapper.entityToDto(receptor);
       usersWithAccess.add(dto);
@@ -371,50 +358,59 @@ public class FolderService {
   }
 
   // comartir con toso los usaurios
-  public void shareFolderWithAllUsers(Long folderId, Long emisorId) {
-    List<UserEntity> usuarios = usuarioRepository.findAll();
-    FolderEntity folder = folderRepository.findById(folderId)
-        .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " + folderId));
-    for (UserEntity usuario : usuarios) {
-      if (!usuario.getId().equals(emisorId)) {
-        shareFolder(folderId, emisorId, usuario.getId());
-        notificacionBl.crearNotificacionCompartir(usuario.getId(),
-            "Nueva Carpeta Compartida",
-            "Tienes acceso a una nueva carpeta: '" + folder.getName() + "' compartida por "
-                + usuarioRepository.findById(emisorId).get().getNames(),
-            "compartida");
-      }
-    }
-  }
+  // public void shareFolderWithAllUsers(Long folderId, Long emisorId) {
+  // List<UserEntity> usuarios = usuarioRepository.findAll();
+  // FolderEntity folder = folderRepository.findById(folderId)
+  // .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " +
+  // folderId));
+  // for (UserEntity usuario : usuarios) {
+  // if (!usuario.getId().equals(emisorId)) {
+  // shareFolder(folderId, emisorId, usuario.getId());
+  // notificacionBl.crearNotificacionCompartir(usuario.getId(),
+  // "Nueva Carpeta Compartida",
+  // "Tienes acceso a una nueva carpeta: '" + folder.getName() + "' compartida por
+  // "
+  // + usuarioRepository.findById(emisorId).get().getNames(),
+  // "compartida");
+  // }
+  // }
+  // }
 
   // En la clase FolderBl
-  public void shareFolderWithUsersByDependency(String dependencyName, Long folderId, Long emisorId) {
-    // Obtener la carpeta que se va a compartir
-    FolderEntity folder = folderRepository.findById(folderId)
-        .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " + folderId));
-
-    // Verificar que exista la dependencia
-    List<UserEntity> usuariosEnDependencia = usuarioRepository.findByDependence(dependencyName);
-    if (usuariosEnDependencia.isEmpty()) {
-      throw new RuntimeException("No existen usuarios en la dependencia: " + dependencyName);
-    }
-
-    // Obtener el usuario emisor
-    UserEntity emisor = usuarioRepository.findById(emisorId)
-        .orElseThrow(() -> new RuntimeException("UserEntity emisor no encontrado con ID: " + emisorId));
-
-    // Compartir la carpeta con cada usuario de la dependencia
-    for (UserEntity receptor : usuariosEnDependencia) {
-      if (!receptor.getId().equals(emisorId)) { // Asegurarse de no compartir la carpeta con uno mismo
-        shareFolder(folderId, emisorId, receptor.getId());
-        // Crear notificaciones para cada receptor que recibe acceso a la carpeta
-        notificacionBl.crearNotificacionCompartir(receptor.getId(),
-            "Carpeta Compartida",
-            "Tienes acceso a una nueva carpeta: '" + folder.getName() + "' compartida por " + emisor.getNames(),
-            "compartida");
-      }
-    }
-  }
+  // public void shareFolderWithUsersByDependency(String dependencyName, Long
+  // folderId, Long emisorId) {
+  // // Obtener la carpeta que se va a compartir
+  // FolderEntity folder = folderRepository.findById(folderId)
+  // .orElseThrow(() -> new RuntimeException("Carpeta no encontrada con ID: " +
+  // folderId));
+  //
+  // // Verificar que exista la dependencia
+  // List<UserEntity> usuariosEnDependencia =
+  // usuarioRepository.findByDependence(dependencyName);
+  // if (usuariosEnDependencia.isEmpty()) {
+  // throw new RuntimeException("No existen usuarios en la dependencia: " +
+  // dependencyName);
+  // }
+  //
+  // // Obtener el usuario emisor
+  // UserEntity emisor = usuarioRepository.findById(emisorId)
+  // .orElseThrow(() -> new RuntimeException("UserEntity emisor no encontrado con
+  // ID: " + emisorId));
+  //
+  // // Compartir la carpeta con cada usuario de la dependencia
+  // for (UserEntity receptor : usuariosEnDependencia) {
+  // if (!receptor.getId().equals(emisorId)) { // Asegurarse de no compartir la
+  // carpeta con uno mismo
+  // shareFolder(folderId, emisorId, receptor.getId());
+  // // Crear notificaciones para cada receptor que recibe acceso a la carpeta
+  // notificacionBl.crearNotificacionCompartir(receptor.getId(),
+  // "Carpeta Compartida",
+  // "Tienes acceso a una nueva carpeta: '" + folder.getName() + "' compartida por
+  // " + emisor.getNames(),
+  // "compartida");
+  // }
+  // }
+  // }
 
   // generar el link de folder
   // public List<String> generateSharedFolderLinks(Long folderId, Long userId) {
@@ -487,67 +483,5 @@ public class FolderService {
   // .collect(Collectors.toSet());
   //
   // return new ArrayList<>(folderDtos);
-  // }
-
-  // conversion a dto de los datos json
-  // private FolderDto convertToDtos(FolderEntity folder) {
-  // FolderDto folderDto = new FolderDto();
-  // folderDto.setId(folder.getId());
-  // folderDto.setName(folder.getName());
-  // folderDto.setAccessType(folder.getAccessType());
-  // folderDto.setCreationDate(folder.getCreationDate());
-  // folderDto.setUpdateDate(folder.getUpdateDate());
-  // folderDto.setDeleted(folder.getDeleted());
-  // folderDto.setUserId(folder.getUser().getId());
-  // folderDto.setParentFolderId(folder.getParentFolder() != null ?
-  // folder.getParentFolder().getId() : null);
-  // return folderDto;
-  // }
-
-  // Método para obtener carpetas compartidas con un usuario específico
-  // public List<FolderDto> getSharedFoldersWithUser(Long userId) {
-  // List<SharedFolder> sharedFoldersByUser =
-  // sharedFolderRepository.findByReceptor_id(userId);
-  // Set<FolderDto> sharedFolders = new HashSet<>();
-  //
-  // sharedFoldersByUser.forEach(sharedFolder ->
-  // sharedFolders.add(FolderMapper.entityToDto(sharedFolder.getFolder())));
-  //
-  // return new ArrayList<>(sharedFolders);
-  // }
-
-  // Método para descargar el contenido de un bucket
-  // public void downloadBucketContents(String bucketName, OutputStream
-  // outputStream) throws IOException {
-  // ZipOutputStream zipOut = new ZipOutputStream(outputStream);
-  // try {
-  // Iterable<Result<Item>> objects = minioClient.listObjects(
-  // ListObjectsArgs.builder().bucket(bucketName).build());
-  //
-  // for (Result<Item> objectResult : objects) {
-  // Item item = objectResult.get();
-  // InputStream stream = minioClient.getObject(
-  // GetObjectArgs.builder()
-  // .bucket(bucketName)
-  // .object(item.objectName())
-  // .build());
-  //
-  // ZipEntry zipEntry = new ZipEntry(item.objectName());
-  // zipOut.putNextEntry(zipEntry);
-  //
-  // byte[] bytes = new byte[1024];
-  // int length;
-  // while ((length = stream.read(bytes)) >= 0) {
-  // zipOut.write(bytes, 0, length);
-  // }
-  // stream.close();
-  // zipOut.closeEntry();
-  // }
-  // } catch (Exception e) {
-  // throw new RuntimeException("Failed to download bucket: " + e.getMessage(),
-  // e);
-  // } finally {
-  // zipOut.close();
-  // }
   // }
 }

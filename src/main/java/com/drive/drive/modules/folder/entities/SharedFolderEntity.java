@@ -1,6 +1,5 @@
-package com.drive.drive.sharing.entity;
+package com.drive.drive.modules.folder.entities;
 
-import com.drive.drive.modules.folder.entities.FolderEntity;
 import com.drive.drive.modules.user.entities.UserEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,7 +11,7 @@ import java.util.Date;
 @Setter
 @Entity
 @Table(name = "Carpetas_Compartidos")
-public class SharedFolder {
+public class SharedFolderEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,6 +28,9 @@ public class SharedFolder {
   @ManyToOne
   @JoinColumn(name = "receptor_id")
   private UserEntity receptor;
+
+  @Column(name = "tipo")
+  private String type;
 
   @Column(name = "shared_at")
   private Date sharedAt;

@@ -40,7 +40,7 @@ public interface FolderRepository extends JpaRepository<FolderEntity, Long>, Jpa
   void clearParentFolderReferences(Long parentFolderId);
 
   @Modifying
-  @Query("DELETE FROM SharedFolder cc WHERE cc.folder.id = :folderId")
+  @Query("DELETE FROM SharedFolderEntity cc WHERE cc.folder.id = :folderId")
   void deleteSharedFolderReferencesByFolderId(Long folderId);
 
   boolean existsByNameAndParentFolder_IdAndUser_id(String name, Long parentFolderId, Long userId);
