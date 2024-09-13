@@ -6,16 +6,16 @@ import com.drive.drive.modules.file.dto.FileDto;
 import com.drive.drive.modules.file.dto.FileFilter;
 import com.drive.drive.modules.file.dto.FileValidator;
 import com.drive.drive.modules.file.entities.FileEntity;
+import com.drive.drive.modules.file.entities.SharedFileEntity;
 import com.drive.drive.modules.file.mappers.FileMapper;
 import com.drive.drive.modules.file.repositories.FileRepository;
+import com.drive.drive.modules.file.repositories.SharedFileRepository;
 import com.drive.drive.modules.folder.entities.FolderEntity;
 import com.drive.drive.modules.folder.repositories.FolderRepository;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.services.MinioService;
 import com.drive.drive.shared.services.SendNotificationService;
 import com.drive.drive.shared.utils.PasswordUtil;
-import com.drive.drive.sharing.entity.SharedDocumentEntity;
-import com.drive.drive.sharing.repository.SharingRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +44,7 @@ public class FileService {
   private FolderRepository folderRepository;
 
   @Autowired
-  private SharingRepository sharingRepository;
+  private SharedFileRepository sharedFileRepository;
 
   @Autowired
   private SendNotificationService notificationService;
@@ -119,6 +119,20 @@ public class FileService {
       return res.setData(dto).setMessage("Archivo obtenido correctamente");
     } catch (Exception e) {
       log.error("Error getting file by ID {}: {}", fileId, e.getMessage());
+      return res.setCode(500).setMessage("Error al obtener el archivo");
+    }
+  }
+
+  public ResponseDto<FileDto> getPublicFileByCode(String code) {
+    ResponseDto<FileDto> res = new ResponseDto<FileDto>().setCode(200);
+    try {
+      FileEntity file = fileRepository.findByCodeAndAccessTypeAndDeletedFalse(code, "publico").get();
+      FileDto dto = FileMapper.FileEntityToDto(file);
+      dto.setLink(minioService.getDownloadUrl(file.getFolder().getCode(), file.getCode()));
+
+      return res.setData(dto).setMessage("Archivo obtenido correctamente");
+    } catch (Exception e) {
+      log.error("Error getting file by code {}: {}", code, e.getMessage());
       return res.setCode(500).setMessage("Error al obtener el archivo");
     }
   }
@@ -346,14 +360,12 @@ public class FileService {
       FileEntity file = fileRepository.findById(fileId)
           .orElseThrow(() -> new RuntimeException("File not found"));
 
-      List<SharedDocumentEntity> sharedDocuments = sharingRepository.findByDocumento_Id(fileId);
-
+      List<SharedFileEntity> sharedDocuments = sharedFileRepository.findByFile_Id(fileId);
       this.notificationService.sendDeleteFileNotification(sharedDocuments, file);
-
-      sharingRepository.deleteAll(sharedDocuments);
+      sharedFileRepository.deleteAll(sharedDocuments);
 
       if (!sharedDocuments.isEmpty())
-        sharingRepository.deleteAll(sharedDocuments);
+        sharedFileRepository.deleteAll(sharedDocuments);
 
       minioService.deleteObject(file);
 
@@ -365,38 +377,7 @@ public class FileService {
       return new ResponseDto<>(500, false, "Error al eliminar el archivo");
     }
   }
-  //
-  // // Método para encontrar los archivos recientes por ID de usuario
-  // public List<FileDto> findRecentFilesByUserId(Long userId) {
-  // // Encuentra los archivos por usuario, que no estén eliminados y ordenados
-  // por
-  // // fecha de creación
-  // List<FileEntity> recentFiles =
-  // fileRepository.findByUser_UsuarioIDAndDeletedFalseOrderByCreatedDateDesc(userId);
-  //
-  // // Convierte los FileEntity a FileDto
-  // return recentFiles.stream().map(file -> {
-  // FileDto dto = new FileDto();
-  // dto.setId(file.getId());
-  // dto.setUserId(file.getUser().getUsuarioID());
-  // dto.setTitle(file.getTitle());
-  // dto.setDescription(file.getDescription());
-  // dto.setEtag(file.getEtag());
-  // dto.setAccessType(file.getAccessType());
-  // dto.setFolderId(file.getFolder().getId());
-  // dto.setSize(file.getSize());
-  // dto.setPassword(file.getPassword());
-  // dto.setCategoria(file.getCategoria());
-  // dto.setCreatedDate(file.getCreatedDate());
-  // dto.setModifiedDate(file.getModifiedDate());
-  // dto.setDeleted(file.getDeleted());
-  // dto.setMinioLink(minioService.getDownloadUrl(file.getEtag(),
-  // file.getFolder().getName()));
-  // // Añade aquí más mapeos si hay más campos en FileDto
-  // return dto;
-  // }).collect(Collectors.toList());
-  // }
-  //
+
   // // Método para encontrar los archivos por categoría y usuario
   // public List<FileDto> findFilesByCategoryAndUser(String categoria, Long
   // userId) {
@@ -405,31 +386,7 @@ public class FileService {
   // userId);
   // return files.stream().map(this::mapToFileDto).collect(Collectors.toList());
   // }
-  //
-  // // Método para mapear un FileEntity a un FileDto
-  // private FileDto mapToFileDto(FileEntity file) {
-  // FileDto dto = new FileDto();
-  // dto.setId(file.getId());
-  // dto.setUserId(file.getUser().getUsuarioID());
-  // dto.setTitle(file.getTitle());
-  // dto.setDescription(file.getDescription());
-  // dto.setEtag(file.getEtag());
-  // dto.setAccessType(file.getAccessType());
-  // dto.setPassword(file.getPassword());
-  // dto.setSize(file.getSize());
-  // dto.setCategoria(file.getCategoria());
-  // dto.setCreatedDate(file.getCreatedDate());
-  // dto.setModifiedDate(file.getModifiedDate());
-  // dto.setDeleted(file.getDeleted());
-  // dto.setMinioLink(minioService.getDownloadUrl(file.getEtag(),
-  // file.getFolder().getName()));
-  // if (file.getFolder() != null) {
-  // dto.setFolderId(file.getFolder().getId());
-  // }
-  // // Añade más mapeos según sea necesario.
-  // return dto;
-  // }
-  //
+
   // // Actualiza la categoría de un archivo
   // public String updateFileCategory(Long fileId, String newCategory) {
   // if (!newCategory.equals("Nuevo") && !newCategory.equals("Reemplazado") &&
@@ -438,7 +395,7 @@ public class FileService {
   // "Categoría inválida. Las categorías válidas son: Nuevo, Reemplazado,
   // Sellado.");
   // }
-  //
+
   // FileEntity file = fileRepository.findById(fileId)
   // .orElseThrow(() -> new RuntimeException("Archivo no encontrado con ID: " +
   // fileId));

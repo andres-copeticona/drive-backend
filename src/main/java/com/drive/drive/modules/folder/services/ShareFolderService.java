@@ -93,4 +93,50 @@ public class ShareFolderService {
       return new ResponseDto<>(500, false, "Error al compartir la carpeta");
     }
   }
+
+  public ResponseDto<Boolean> shareAll(ShareFolderDto shareFolderDto) {
+    try {
+      UserEntity emisor = userRepository.findById(shareFolderDto.getEmisorId()).get();
+      FolderEntity folder = folderRepository.findById(shareFolderDto.getId()).get();
+      List<UserEntity> users = userRepository.findAll();
+
+      for (UserEntity user : users) {
+        SharedFolderEntity sharedFolder = new SharedFolderEntity();
+        sharedFolder.setFolder(folder);
+        sharedFolder.setEmisor(emisor);
+        sharedFolder.setReceptor(user);
+        sharedFolder.setType(shareFolderDto.getType());
+        sharedFolder.setSharedAt(new Date());
+        sharedFolderRepository.save(sharedFolder);
+        notificationService.sendShareFolderNotification(List.of(user.getId()), folder.getName(), emisor.getFullname());
+      }
+
+      return new ResponseDto<>(200, true, "Carpeta compartida correctamente");
+    } catch (Exception e) {
+      return new ResponseDto<>(500, false, "Error al compartir la carpeta");
+    }
+  }
+
+  public ResponseDto<Boolean> shareDependency(ShareFolderDto shareFolderDto) {
+    try {
+      UserEntity emisor = userRepository.findById(shareFolderDto.getEmisorId()).get();
+      FolderEntity folder = folderRepository.findById(shareFolderDto.getId()).get();
+      List<UserEntity> users = userRepository.findByDependence(shareFolderDto.getDependency());
+
+      for (UserEntity user : users) {
+        SharedFolderEntity sharedFolder = new SharedFolderEntity();
+        sharedFolder.setFolder(folder);
+        sharedFolder.setEmisor(emisor);
+        sharedFolder.setReceptor(user);
+        sharedFolder.setType(shareFolderDto.getType());
+        sharedFolder.setSharedAt(new Date());
+        sharedFolderRepository.save(sharedFolder);
+        notificationService.sendShareFolderNotification(List.of(user.getId()), folder.getName(), emisor.getFullname());
+      }
+
+      return new ResponseDto<>(200, true, "Carpeta compartida correctamente");
+    } catch (Exception e) {
+      return new ResponseDto<>(500, false, "Error al compartir la carpeta");
+    }
+  }
 }

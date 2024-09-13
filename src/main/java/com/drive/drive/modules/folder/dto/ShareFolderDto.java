@@ -13,5 +13,6 @@ public class ShareFolderDto {
   private Long id;
   private Long emisorId;
   private String type;
+  private String dependency;
   private List<Long> receptorIds;
 }

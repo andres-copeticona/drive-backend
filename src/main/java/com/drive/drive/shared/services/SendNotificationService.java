@@ -9,6 +9,7 @@ import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.file.entities.SharedFileEntity;
 import com.drive.drive.modules.notification.dto.CreateNotificationDto;
 import com.drive.drive.modules.notification.services.NotificationService;
+import com.drive.drive.modules.user.entities.UserEntity;
 
 @Service
 public class SendNotificationService {
@@ -62,6 +63,17 @@ public class SendNotificationService {
     dto.setType("compartido");
     for (Long userId : userIds) {
       dto.setUserId(userId);
+      notificationService.createNotification(dto);
+    }
+  }
+
+  public void sendAllShareFolderNotification(List<UserEntity> users, String folderName, String emisorName) {
+    CreateNotificationDto dto = new CreateNotificationDto();
+    dto.setTitle("Carpeta Compartida");
+    dto.setMessage("Has recibido acceso a la carpeta '" + folderName + "', ha sido compartida por " + emisorName + ".");
+    dto.setType("compartido");
+    for (UserEntity user : users) {
+      dto.setUserId(user.getId());
       notificationService.createNotification(dto);
     }
   }

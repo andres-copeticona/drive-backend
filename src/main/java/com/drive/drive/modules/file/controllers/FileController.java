@@ -7,6 +7,7 @@ import com.drive.drive.security.IsPublic;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -59,20 +60,17 @@ public class FileController {
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
-  // TODO: get file with public code
-  // @Operation(summary = "Get file by ID")
-  // @ApiResponses(value = {
-  // @ApiResponse(responseCode = "200", description = "Successfully fetched file
-  // by ID"),
-  // @ApiResponse(responseCode = "500", description = "Failed to fetch the file")
-  // })
-  // @GetMapping("/public/{code}")
-  // public ResponseEntity<ResponseDto<FileDto>> getFileById(@PathVariable Long
-  // id) {
-  // log.info("Fetching file with id: {}...", id);
-  // ResponseDto<FileDto> res = fileService.getFileById(id);
-  // return ResponseEntity.status(res.getCode()).body(res);
-  // }
+  @Operation(summary = "Get file by ID")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully fetched file by ID"),
+      @ApiResponse(responseCode = "500", description = "Failed to fetch the file") })
+  @GetMapping("/public/{code}")
+  @IsPublic
+  public ResponseEntity<ResponseDto<FileDto>> getPublicFile(@PathVariable String code) {
+    log.info("Fetching file with code: {}...", code);
+    ResponseDto<FileDto> res = fileService.getPublicFileByCode(code);
+    return ResponseEntity.status(res.getCode()).body(res);
+  }
 
   @Operation(summary = "Download file by ID")
   @ApiResponses(value = {
@@ -131,102 +129,6 @@ public class FileController {
     var result = fileService.deleteFile(fileId);
     return ResponseEntity.status(result.getCode()).body(result);
   }
-
-  // // compartir el etag del archivo para que el usuario pueda descargarlo
-  // @GetMapping("/download/{etag}/bucket/{bucket}")
-  // public ResponseEntity<String> getDownloadUrl(@PathVariable String etag,
-  // @PathVariable String bucket) {
-  // try {
-  // String url = fileBl.getDownloadUrl(etag, bucket);
-  // return ResponseEntity.ok(url);
-  // } catch (Exception e) {
-  // log.error("Error getting file URL: {}", e.getMessage());
-  // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-  // .body("Error al obtener la URL del archivo: " + e.getMessage());
-  // }
-  // }
-
-  // @PostMapping("/share")
-  // public ResponseEntity<Map<String, String>> shareFile(@RequestBody
-  // SharedDocumentDto sharedDocumentDto) {
-  // try {
-  // String sharedDocumentLink = fileBl.shareFile(sharedDocumentDto);
-  // Map<String, String> response = new HashMap<>();
-  // response.put("message", "File shared successfully");
-  // response.put("link", sharedDocumentLink);
-  // return ResponseEntity.ok(response);
-  // } catch (Exception e) {
-  // log.error("Error sharing file: {}", e.getMessage());
-  // Map<String, String> response = new HashMap<>();
-  // response.put("message", "Error al compartir el archivo: " + e.getMessage());
-  // return ResponseEntity.badRequest().body(response);
-  // }
-  // }
-
-  // obtener los archivos publicos
-  // @GetMapping("/public-files")
-  // public ResponseEntity<List<FileDto>> getAllPublicFiles() {
-  // List<FileDto> files = fileBl.findAllPublicFiles();
-  // if (!files.isEmpty()) {
-  // return ResponseEntity.ok(files);
-  // } else {
-  // return ResponseEntity.noContent().build();
-  // }
-  // }
-
-  // mostrar los documentos compartidos por id
-  // @GetMapping("/shared-documents/{userId}")
-  // public ResponseEntity<List<SharedDocumentDto>>
-  // findAllSharedDocumentsByUserId(@PathVariable Long userId) {
-  // try {
-  // List<SharedDocumentDto> sharedDocuments =
-  // fileBl.findAllSharedDocumentsByUserId(userId);
-  // if (sharedDocuments.isEmpty()) {
-  // return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-  // } else {
-  // return ResponseEntity.ok(sharedDocuments);
-  // }
-  // } catch (Exception e) {
-  // log.error("Error retrieving shared documents: {}", e.getMessage());
-  // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-  // }
-  // }
-
-  // obtener los archivos recientes por usuario
-  // @GetMapping("/recent/{userId}")
-  // public ResponseEntity<List<FileDto>> getRecentFilesByUser(@PathVariable Long
-  // userId) {
-  // try {
-  // List<FileDto> recentFiles = fileBl.findRecentFilesByUserId(userId);
-  // if (recentFiles.isEmpty()) {
-  // return ResponseEntity.noContent().build();
-  // } else {
-  // return ResponseEntity.ok(recentFiles);
-  // }
-  // } catch (Exception e) {
-  // log.error("Error retrieving recent files: {}", e.getMessage());
-  // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-  // }
-  // }
-
-  // obtener los archivos por categoria y usuario
-  // @GetMapping("/files-by-category")
-  // public ResponseEntity<List<FileDto>> getFilesByCategoryAndUser(@RequestParam
-  // String categoria,
-  // @RequestParam Long userId) {
-  // try {
-  // List<FileDto> filesByCategoryAndUser =
-  // fileBl.findFilesByCategoryAndUser(categoria, userId);
-  // if (filesByCategoryAndUser.isEmpty()) {
-  // return ResponseEntity.noContent().build();
-  // } else {
-  // return ResponseEntity.ok(filesByCategoryAndUser);
-  // }
-  // } catch (Exception e) {
-  // log.error("Error retrieving files by category and user: {}", e.getMessage());
-  // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-  // }
-  // }
 
   // actualizar la categoria del archivo
   // @PutMapping("/{fileId}/category")

@@ -49,4 +49,26 @@ public class ShareFolderController {
     var res = shareFolderService.share(shareFolderDto);
     return ResponseEntity.status(res.getCode()).body(res);
   }
+
+  @PostMapping("/all")
+  @ActivityLogger(description = "Compartir carpeta con todos los usuarios", action = "Compartir")
+  public ResponseEntity<ResponseDto<Boolean>> shareAll(
+      @AccessUser UserData user,
+      @RequestBody ShareFolderDto shareFolderDto) {
+    log.info("Share folder {}, with all users", shareFolderDto.getId());
+    shareFolderDto.setEmisorId(user.getUserId());
+    var res = shareFolderService.shareAll(shareFolderDto);
+    return ResponseEntity.status(res.getCode()).body(res);
+  }
+
+  @PostMapping("/dependency")
+  @ActivityLogger(description = "Compartir carpeta con todos los usuarios", action = "Compartir")
+  public ResponseEntity<ResponseDto<Boolean>> shareDependency(
+      @AccessUser UserData user,
+      @RequestBody ShareFolderDto shareFolderDto) {
+    log.info("Share folder {}, with {}", shareFolderDto.getId(), shareFolderDto.getDependency());
+    shareFolderDto.setEmisorId(user.getUserId());
+    var res = shareFolderService.shareDependency(shareFolderDto);
+    return ResponseEntity.status(res.getCode()).body(res);
+  }
 }
