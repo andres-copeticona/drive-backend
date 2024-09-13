@@ -16,7 +16,7 @@ import com.drive.drive.shared.dto.DownloadDto;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.services.MinioService;
-import com.drive.drive.shared.services.NotificationService;
+import com.drive.drive.shared.services.SendNotificationService;
 import com.drive.drive.modules.user.dto.UserDto;
 import com.drive.drive.modules.user.entities.UserEntity;
 import com.drive.drive.modules.user.mappers.UserMapper;
@@ -42,7 +42,7 @@ import java.util.zip.ZipOutputStream;
 public class FolderService {
 
   @Autowired
-  private NotificationService notificationService;
+  private SendNotificationService notificationService;
 
   @Autowired
   private FolderRepository folderRepository;

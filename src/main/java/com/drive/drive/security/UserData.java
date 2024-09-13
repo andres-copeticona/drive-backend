@@ -10,7 +10,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Hidden
 public class UserData {
-  // TODO: add ip
   String username;
   Long userId;
   Long roleId;

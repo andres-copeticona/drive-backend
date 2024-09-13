@@ -18,6 +18,7 @@ import com.drive.drive.security.AccessUser;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
+import com.drive.drive.shared.utils.activityLogger.ActivityLogger;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
@@ -39,6 +40,7 @@ public class ShareFolderController {
   }
 
   @PostMapping("/")
+  @ActivityLogger(description = "Compartir carpeta", action = "Compartir")
   public ResponseEntity<ResponseDto<Boolean>> share(
       @AccessUser UserData user,
       @RequestBody ShareFolderDto shareFolderDto) {

@@ -12,7 +12,7 @@ import com.drive.drive.modules.folder.entities.FolderEntity;
 import com.drive.drive.modules.folder.repositories.FolderRepository;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.services.MinioService;
-import com.drive.drive.shared.services.NotificationService;
+import com.drive.drive.shared.services.SendNotificationService;
 import com.drive.drive.shared.utils.PasswordUtil;
 import com.drive.drive.sharing.entity.SharedDocumentEntity;
 import com.drive.drive.sharing.repository.SharingRepository;
@@ -47,7 +47,7 @@ public class FileService {
   private SharingRepository sharingRepository;
 
   @Autowired
-  private NotificationService notificationService;
+  private SendNotificationService notificationService;
 
   @Autowired
   private UserRepository userRepository;

@@ -1,4 +1,4 @@
-package com.drive.drive.audit.entity;
+package com.drive.drive.modules.activities.entities;
 
 import com.drive.drive.modules.user.entities.UserEntity;
 import jakarta.persistence.*;
@@ -11,30 +11,30 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "actividades")
-public class Actividad {
+public class ActivityEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @Column(name = "nombre")
-  private String nombre;
+  private String name;
 
   @Column(name = "fecha")
-  private LocalDateTime fecha;
+  private LocalDateTime date;
 
   @Column(name = "ip")
   private String ip;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "UsuarioID")
-  private UserEntity usuario;
+  private UserEntity user;
 
   @Column(name = "tipo_actividad")
-  private String tipoActividad;
+  private String activityType;
 
   @PrePersist
   protected void onCreate() {
-    this.fecha = LocalDateTime.now();
+    this.date = LocalDateTime.now();
   }
 }

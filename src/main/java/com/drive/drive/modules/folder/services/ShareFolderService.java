@@ -22,7 +22,7 @@ import com.drive.drive.modules.user.entities.UserEntity;
 import com.drive.drive.modules.user.repositories.UserRepository;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
-import com.drive.drive.shared.services.NotificationService;
+import com.drive.drive.shared.services.SendNotificationService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +40,7 @@ public class ShareFolderService {
   private FolderRepository folderRepository;
 
   @Autowired
-  private NotificationService notificationService;
+  private SendNotificationService notificationService;
 
   public ResponseDto<ListResponseDto<List<ResponseShareFolderDto>>> list(ShareFolderFilter filter) {
     try {
