@@ -6,9 +6,9 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.drive.drive.modules.file.entities.FileEntity;
+import com.drive.drive.modules.file.entities.SharedFileEntity;
 import com.drive.drive.modules.notification.dto.CreateNotificationDto;
 import com.drive.drive.modules.notification.services.NotificationService;
-import com.drive.drive.sharing.entity.SharedDocumentEntity;
 
 @Service
 public class SendNotificationService {
@@ -18,7 +18,7 @@ public class SendNotificationService {
     this.notificationService = notificationSerice;
   }
 
-  public void sendDeleteFileNotification(List<SharedDocumentEntity> sharedDocuments, FileEntity file) {
+  public void sendDeleteFileNotification(List<SharedFileEntity> sharedDocuments, FileEntity file) {
     List<Long> userIds = sharedDocuments.stream()
         .map(doc -> doc.getReceptor().getId())
         .distinct()
@@ -27,6 +27,17 @@ public class SendNotificationService {
     dto.setTitle("Documento Eliminado");
     dto.setMessage("El documento '" + file.getTitle() + "' ha sido eliminado.");
     dto.setType("eliminado");
+    for (Long userId : userIds) {
+      dto.setUserId(userId);
+      notificationService.createNotification(dto);
+    }
+  }
+
+  public void sendShareFileNotification(List<Long> userIds, String fileName, String emisorName) {
+    CreateNotificationDto dto = new CreateNotificationDto();
+    dto.setTitle("Carpeta Compartida");
+    dto.setMessage("Has recibido acceso al archivo '" + fileName + "', ha sido compartida por " + emisorName + ".");
+    dto.setType("compartido");
     for (Long userId : userIds) {
       dto.setUserId(userId);
       notificationService.createNotification(dto);

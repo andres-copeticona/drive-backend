@@ -1,6 +1,5 @@
-package com.drive.drive.sharing.entity;
+package com.drive.drive.modules.file.entities;
 
-import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.user.entities.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -14,12 +13,12 @@ import java.util.Date;
 @AllArgsConstructor
 @Entity
 @Table(name = "Documentos_Compartidos")
-public class SharedDocumentEntity {
+public class SharedFileEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "CompartidoID")
-  private Long compartidoId;
+  private Long id;
 
   @ManyToOne
   @JoinColumn(name = "Receptor_UsuarioID", referencedColumnName = "UsuarioID")
@@ -31,14 +30,14 @@ public class SharedDocumentEntity {
 
   @ManyToOne
   @JoinColumn(name = "DocumentoID", referencedColumnName = "DocumentoID")
-  private FileEntity documento;
+  private FileEntity file;
 
   @Column(name = "TipoAcceso")
-  private String tipoAcceso;
+  private String type;
 
   @Column(name = "CreatedAt")
-  private Date createdAt;
+  private Date sharedAt;
 
   @Column(name = "LinkDocumento")
-  private String linkDocumento;
+  private String fileLink;
 }
