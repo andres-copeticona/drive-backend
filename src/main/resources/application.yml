@@ -30,10 +30,10 @@ logging:
       springframework=DEBUG: DEBUG
 
 external-api:
-  authentication-url: http://localhost:8082/login # http://correspondencia.gobernaciondecochabamba.bo/Restserver/singin
+  authentication-url: http://correspondencia.gobernaciondecochabamba.bo/Restserver/singin
   token: servidoresgadc12345
 
-  ## Swagger https://springdoc.org/
+## Swagger https://springdoc.org/
 springdoc:
   api-docs:
     enabled: true
