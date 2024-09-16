@@ -38,6 +38,9 @@ public class FolderEntity {
   @Column(name = "Deleted")
   private Boolean deleted;
 
+  @Column(name = "Visitas")
+  private Integer visits;
+
   @ManyToOne
   @JoinColumn(name = "FolderUsuarioID", referencedColumnName = "UsuarioID", nullable = true)
   private UserEntity user;

@@ -19,11 +19,10 @@ public interface FileRepository extends JpaRepository<FileEntity, Long>, JpaSpec
   // find by access type
   List<FileEntity> findByAccessTypeAndDeletedFalse(String accessType);
 
-  // find by user id en orden descendente
   List<FileEntity> findByUser_idAndDeletedFalseOrderByCreatedDateDesc(Long userId);
 
   // fin by categoria and user id los que no esten eleiminados
-  List<FileEntity> findByCategoriaAndUser_idAndDeletedFalse(String categoria, Long userId);
+  List<FileEntity> findByCategoryAndUser_idAndDeletedFalse(String categoria, Long userId);
 
   // find by user id los que no esten eleiminados
   List<FileEntity> findByUser_idAndDeletedFalse(Long userId);

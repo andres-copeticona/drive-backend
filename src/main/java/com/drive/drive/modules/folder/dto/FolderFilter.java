@@ -25,6 +25,9 @@ public class FolderFilter extends BaseFilter<FolderEntity> {
   @NotNull
   private Long parentId;
 
+  @Parameter(description = "Access type", example = "public", required = false)
+  private String accessType;
+
   @Override
   public Specification<FolderEntity> getSpecification() {
     Specification<FolderEntity> spec = Specification.where(null);
@@ -39,6 +42,9 @@ public class FolderFilter extends BaseFilter<FolderEntity> {
 
     if (searchTerm != null && !searchTerm.isBlank())
       spec = spec.and(FolderSpecification.filterBySearchTerm(searchTerm));
+
+    if (accessType != null && !accessType.isBlank())
+      spec = spec.and(FolderSpecification.filterByString("accessType", accessType));
 
     return spec;
   }

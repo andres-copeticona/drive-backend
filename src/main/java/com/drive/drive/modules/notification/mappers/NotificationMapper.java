@@ -22,6 +22,7 @@ public class NotificationMapper {
 
   public static NotificationDto entityToDto(NotificationEntity notificationEntity) {
     NotificationDto notificationDto = new NotificationDto();
+    notificationDto.setId(notificationEntity.getId());
     notificationDto.setUser(UserMapper.entityToDto(notificationEntity.getUser()));
     notificationDto.setTitle(notificationEntity.getTitle());
     notificationDto.setMessage(notificationEntity.getMessage());

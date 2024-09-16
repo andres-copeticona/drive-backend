@@ -41,12 +41,4 @@ public class ActivityController {
     return ResponseEntity.status(results.getCode()).body(results);
   }
 
-  // Obtener actividad por id
-  // @GetMapping("/usuario/{usuarioId}/contador")
-  // public ResponseEntity<List<ContadorActividadDto>>
-  // obtenerActividadesPorUsuario(@PathVariable Long usuarioId) {
-  // List<ContadorActividadDto> conatadorActividades =
-  // activityService.obtenerContadorActividadesPorUsuario(usuarioId);
-  // return new ResponseEntity<>(conatadorActividades, HttpStatus.OK);
-  // }
 }

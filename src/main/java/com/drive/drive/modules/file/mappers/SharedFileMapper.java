@@ -9,7 +9,7 @@ public class SharedFileMapper {
     SharedFileDto dto = new SharedFileDto();
     dto.setId(entity.getId());
     dto.setReceptor(UserMapper.entityToDto(entity.getReceptor()));
-    dto.setEmisor(UserMapper.entityToDto(entity.getEmisor()));
+    dto.setEmitter(UserMapper.entityToDto(entity.getEmisor()));
     dto.setFile(FileMapper.FileEntityToDto(entity.getFile()));
     dto.setSharedAt(entity.getSharedAt());
     dto.setFileLink(entity.getFileLink());

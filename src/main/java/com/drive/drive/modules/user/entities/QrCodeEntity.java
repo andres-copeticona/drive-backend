@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import com.drive.drive.modules.file.entities.FileEntity;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,8 +21,9 @@ public class QrCodeEntity {
   @Column(name = "id")
   private Long id;
 
-  @Column(name = "emisor")
-  private String emitter;
+  @ManyToOne
+  @JoinColumn(name = "emisor_id", referencedColumnName = "UsuarioID", nullable = false)
+  private UserEntity emitter;
 
   @Column(name = "mensaje")
   private String message;
@@ -33,5 +36,12 @@ public class QrCodeEntity {
 
   @Column(name = "codeQr")
   private String codeQr;
+
+  @Column(name = "Visitas")
+  private Integer visits;
+
+  @OneToOne
+  @JoinColumn(name = "ArchivoID", referencedColumnName = "DocumentoID")
+  private FileEntity file;
 
 }

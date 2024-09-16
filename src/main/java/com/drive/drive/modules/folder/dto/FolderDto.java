@@ -18,5 +18,6 @@ public class FolderDto {
   private Date updateDate;
   private Boolean deleted;
   private Long userId;
+  private Integer visits;
   private Long parentFolderId;
 }

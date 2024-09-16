@@ -1,7 +1,9 @@
 package com.drive.drive.modules.folder.services;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +12,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import com.drive.drive.modules.folder.dto.FolderDto;
 import com.drive.drive.modules.folder.dto.ResponseShareFolderDto;
 import com.drive.drive.modules.folder.dto.ShareFolderDto;
 import com.drive.drive.modules.folder.dto.ShareFolderFilter;
 import com.drive.drive.modules.folder.entities.FolderEntity;
 import com.drive.drive.modules.folder.entities.SharedFolderEntity;
+import com.drive.drive.modules.folder.mappers.FolderMapper;
 import com.drive.drive.modules.folder.mappers.SharedFolderMapper;
 import com.drive.drive.modules.folder.repositories.FolderRepository;
 import com.drive.drive.modules.folder.repositories.SharedFolderRepository;
@@ -137,6 +141,37 @@ public class ShareFolderService {
       return new ResponseDto<>(200, true, "Carpeta compartida correctamente");
     } catch (Exception e) {
       return new ResponseDto<>(500, false, "Error al compartir la carpeta");
+    }
+  }
+
+  public ResponseDto<List<FolderDto>> getBreadcrumb(Long folderId, Long sharedId) {
+    try {
+      List<FolderEntity> breadcrumb = new ArrayList<>();
+      Optional<FolderEntity> currentFolderOpt = folderRepository.findById(folderId);
+      FolderEntity sharedFolderOpt = folderRepository.findById(sharedId).get();
+
+      if (currentFolderOpt.isPresent()) {
+        FolderEntity currentFolder = currentFolderOpt.get();
+        breadcrumb.add(currentFolder);
+        while (currentFolder.getParentFolder() != null
+            && currentFolder.getParentFolder().getId() != sharedId) {
+          currentFolder = currentFolder.getParentFolder();
+          breadcrumb.add(currentFolder);
+        }
+        breadcrumb.add(sharedFolderOpt);
+      }
+
+      List<FolderDto> dtos = breadcrumb.stream()
+          .map(FolderMapper::entityToDto)
+          .collect(Collectors.toList());
+      List<FolderDto> reversedBreadcrumb = new ArrayList<>();
+      for (int i = dtos.size() - 1; i >= 0; i--) {
+        reversedBreadcrumb.add(dtos.get(i));
+      }
+
+      return new ResponseDto<>(200, reversedBreadcrumb, "Breadcrumb obtenido correctamente.");
+    } catch (Exception e) {
+      return new ResponseDto<>(500, null, "Error obteniendo el breadcrumb, " + e.getMessage());
     }
   }
 }

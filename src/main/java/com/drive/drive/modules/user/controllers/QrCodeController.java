@@ -1,7 +1,9 @@
 package com.drive.drive.modules.user.controllers;
 
 import com.drive.drive.modules.user.services.QrCodeService;
+import com.drive.drive.security.IsPublic;
 import com.drive.drive.shared.dto.ResponseDto;
+import com.drive.drive.modules.qr.dto.QrCodeDto;
 import com.drive.drive.modules.user.entities.QrCodeEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/qr")
+@RequestMapping("/v1/qr")
 public class QrCodeController {
 
   @Autowired
@@ -47,19 +49,11 @@ public class QrCodeController {
     }
   }
 
-  // Endpoint para obtener un código QR por su código único
-  @GetMapping("/codeqr/{codeQr}")
-  public ResponseEntity<ResponseDto<QrCodeEntity>> getQrCodeByCodeQr(@PathVariable String codeQr) {
-    Optional<QrCodeEntity> qrCodeOptional = qrCodeService.getQrCodeByCodeQr(codeQr);
-    if (qrCodeOptional.isPresent()) {
-      ResponseDto<QrCodeEntity> response = new ResponseDto<>(HttpStatus.OK.value(), qrCodeOptional.get(),
-          "Código QR encontrado");
-      return ResponseEntity.ok(response);
-    } else {
-      ResponseDto<QrCodeEntity> response = new ResponseDto<>(HttpStatus.NOT_FOUND.value(), null,
-          "Código QR no encontrado");
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-    }
-  }
+  @GetMapping("/public/{code}")
+  @IsPublic
+  public ResponseEntity<ResponseDto<QrCodeDto>> getQrCodeById(@PathVariable String code) {
+    var res = qrCodeService.getQrCodeByCodeQr(code);
+    return ResponseEntity.status(res.getCode()).body(res);
 
+  }
 }

@@ -14,5 +14,5 @@ public class CreateSharedFileDto {
   private Long emisorId;
   private String type;
   private Long id;
-  // TODO:
+  private String dependency;
 }

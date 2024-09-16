@@ -1,11 +1,7 @@
 package com.drive.drive.shared.services;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipOutputStream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +12,6 @@ import com.drive.drive.modules.folder.entities.FolderEntity;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
-import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -87,5 +82,10 @@ public class MinioService {
         .bucket(bucketName)
         .object(objectName)
         .build());
+  }
+
+  public void replaceObject(FileEntity file, FolderEntity folder, MultipartFile formFile) throws Exception {
+    deleteObject(file);
+    addObject(file, folder, formFile);
   }
 }

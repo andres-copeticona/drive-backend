@@ -21,16 +21,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/notificaciones")
-public class NotifiationController {
+@RequestMapping("/v1/notifications")
+public class NotificationController {
 
   @Autowired
   private NotificationService notificationService;
 
-  @Operation(summary = "List activities")
+  @Operation(summary = "List notifications")
   @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "List of activities fetched successfully."),
-      @ApiResponse(responseCode = "500", description = "Error fetching the activities list.")
+      @ApiResponse(responseCode = "200", description = "List of notifications fetched successfully."),
+      @ApiResponse(responseCode = "500", description = "Error fetching the notifications list.")
   })
   @GetMapping("/")
   public ResponseEntity<ResponseDto<ListResponseDto<List<NotificationDto>>>> listActivities(

@@ -19,6 +19,7 @@ public class ActivityMapper {
     activityDto.setDescription(activityEntity.getName());
     activityDto.setIp(activityEntity.getIp());
     activityDto.setActivityType(activityEntity.getActivityType());
+    activityDto.setDate(activityEntity.getDate());
     activityDto.setUser(UserMapper.entityToDto(activityEntity.getUser()));
     return activityDto;
   }

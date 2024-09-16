@@ -5,12 +5,18 @@ import com.drive.drive.modules.folder.dto.CreateFolderDto;
 import com.drive.drive.modules.folder.dto.FolderDto;
 import com.drive.drive.modules.folder.dto.FolderFilter;
 import com.drive.drive.security.AccessUser;
+import com.drive.drive.security.IsPublic;
 import com.drive.drive.security.UserData;
 import com.drive.drive.shared.dto.DownloadDto;
+import com.drive.drive.shared.dto.ErrorResponseDto;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
+import com.drive.drive.shared.utils.activityLogger.ActivityLogger;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,7 +42,7 @@ public class FolderController {
   @Operation(summary = "List folders")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "List of folders fetched successfully."),
-      @ApiResponse(responseCode = "500", description = "Error fetching folder list.")
+      @ApiResponse(responseCode = "500", description = "Error fetching folder list.", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
   })
   @GetMapping("/")
   public ResponseEntity<ResponseDto<ListResponseDto<List<FolderDto>>>> listFolders(
@@ -46,12 +52,37 @@ public class FolderController {
     return ResponseEntity.status(results.getCode()).body(results);
   }
 
+  @GetMapping("/public")
+  @IsPublic
+  public ResponseEntity<ResponseDto<ListResponseDto<List<FolderDto>>>> listFoldersForPublic(
+      @Parameter(description = "Folder filter") @ParameterObject FolderFilter filter) {
+    log.info("Fetching list of folders.");
+    filter.setAccessType("publico");
+    var results = folderService.listFolders(filter);
+    return ResponseEntity.status(results.getCode()).body(results);
+  }
+
+  @Operation(summary = "Get folder by code")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "successfully fetching folder"),
+      @ApiResponse(responseCode = "500", description = "Error fetching folder.", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+  })
+  @GetMapping("/public/{code}")
+  @IsPublic
+  public ResponseEntity<ResponseDto<FolderDto>> getPublicFolderByCode(
+      @Parameter(description = "Folder code") @PathVariable String code) {
+    log.info("Fetching folder by code '{}'.", code);
+    var results = folderService.getPublicFolderByCode(code);
+    return ResponseEntity.status(results.getCode()).body(results);
+  }
+
   @Operation(summary = "Create folder")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Folder created successfully."),
-      @ApiResponse(responseCode = "500", description = "Error creating folder.")
+      @ApiResponse(responseCode = "500", description = "Error creating folder.", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
   })
   @PostMapping("/")
+  @ActivityLogger(description = "Creó una carpeta nueva", action = "Crear")
   public ResponseEntity<ResponseDto<Boolean>> createFolder(
       @AccessUser UserData userData,
       @Valid @RequestBody CreateFolderDto createFolderDto) {
@@ -61,27 +92,10 @@ public class FolderController {
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
-  // @Operation(summary = "Share a folder")
-  // @ApiResponses(value = {
-  // @ApiResponse(responseCode = "200", description = "Folder shared
-  // successfully."),
-  // @ApiResponse(responseCode = "500", description = "Error sharing folder")
-  // })
-  // @PostMapping("/share")
-  // public ResponseEntity<ResponseDto<Boolean>> share(
-  // @AccessUser UserData userData,
-  // @Valid @RequestBody ShareFolderDto shareFolderDto) {
-  // log.info("Sharing folder '{}' with user ID {}.",
-  // shareFolderDto.getFolderId(), userData.getReceptorId());
-  // shareFolderDto.setEmisorId(userData.getUserId());
-  // var res = folderService.share(shareFolderDto);
-  // return ResponseEntity.status(res.getCode()).body(res);
-  // }
-
   @Operation(summary = "Get breadcrumb for a folder")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Breadcrumb fetched successfully."),
-      @ApiResponse(responseCode = "500", description = "Error fetching breadcrumb.")
+      @ApiResponse(responseCode = "500", description = "Error fetching breadcrumb.", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
   })
   @GetMapping("/{id}/breadcrumb")
   public ResponseEntity<ResponseDto<List<FolderDto>>> getBreadcrumb(
@@ -93,7 +107,7 @@ public class FolderController {
   @Operation(summary = "Download a folder")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Folder downloaded successfully."),
-      @ApiResponse(responseCode = "500", description = "Error trying to downlod the folder.")
+      @ApiResponse(responseCode = "500", description = "Error trying to downlod the folder.", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
   })
   @GetMapping("/{id}/download")
   public ResponseEntity<byte[]> downloadBucketContents(
@@ -115,130 +129,19 @@ public class FolderController {
   @Operation(summary = "Delete a folder")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Folder deleted successfully."),
-      @ApiResponse(responseCode = "500", description = "Error deleting folder.")
+      @ApiResponse(responseCode = "500", description = "Error deleting folder.", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
   })
   @DeleteMapping("/{folderId}")
+  @ActivityLogger(description = "Eliminó una carpeta", action = "Eliminar")
   public ResponseEntity<ResponseDto<Boolean>> deleteFolder(@PathVariable Long folderId) {
     log.info("Deleting Folder '{}'.", folderId);
     var res = folderService.deleteFolder(folderId);
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
-  // @PostMapping("/share")
-  // public ResponseEntity<ResponseDto<String>> shareFolder(@RequestBody
-  // ShareFolderRequest request) {
-  // folderService.shareFolder(request.getFolderId(), request.getEmisorId(),
-  // request.getReceptorId());
-  // ResponseDto<String> response = new ResponseDto<>(200, null, "Carpeta
-  // compartida con éxito.");
-  // return ResponseEntity.ok(response);
-  // }
-
-  // @GetMapping("/shared/{folderId}")
-  // public ResponseEntity<FolderContentsDto> listSharedFolderContents(@AccessUser
-  // UserData userData,
-  // @PathVariable Long folderId) {
-  // FolderContentsDto sharedFolderContents =
-  // folderService.listSharedFolderContents(userData.getUserId(), folderId);
-  // return ResponseEntity.ok(sharedFolderContents);
-  // }
-
-  // @GetMapping("/shared/")
-  // @Operation(description = "List shared folders as receptor")
-  // public ResponseEntity<ResponseDto<List<FolderDto>>>
-  // listSharedFolders(@AccessUser UserData userData) {
-  // List<FolderDto> sharedFolders =
-  // folderService.listSharedFolders(userData.getUserId());
-  // ResponseDto<List<FolderDto>> response = new ResponseDto<>(200, sharedFolders,
-  // "Carpetas compartidas.");
-  // return ResponseEntity.ok(response);
-  // }
-  //
-  // // TODO: Refactor
-  // @PostMapping("/share/all")
-  // public ResponseEntity<ResponseDto<String>>
-  // shareFolderWithAllUsers(@RequestBody ShareFolderRequest request) {
-  // folderService.shareFolderWithAllUsers(request.getFolderId(),
-  // request.getEmisorId());
-  // ResponseDto<String> response = new ResponseDto<>(200, null, "Carpeta
-  // compartida con todos los usuarios.");
-  // return ResponseEntity.ok(response);
-  // }
-  //
-  // // Endpoint para compartir una carpeta con usuarios de una dependencia
-  // @PostMapping("/share/dependency/{dependencyName}")
-  // public ResponseEntity<ResponseDto<String>>
-  // shareFolderWithUsersByDependency(@PathVariable String dependencyName,
-  // @RequestBody ShareFolderRequest request) {
-  // folderService.shareFolderWithUsersByDependency(dependencyName,
-  // request.getFolderId(), request.getEmisorId());
-  // ResponseDto<String> response = new ResponseDto<>(200, null,
-  // "Carpeta compartida con usuarios de la dependencia " + dependencyName + ".");
-  // return ResponseEntity.ok(response);
-  // }
-  //
-  // // Endpoint para listar usuarios con acceso a una carpeta compartida
-  // @GetMapping("/shared/users/{folderId}")
-  // public ResponseEntity<ResponseDto<List<UsuarioDTO>>>
-  // listUsersSharedWith(@PathVariable Long folderId) {
-  // try {
-  // List<UsuarioDTO> users = folderService.listUsersWithAccessToFolder(folderId);
-  // log.info("Folder ID {} shared with {} users.", folderId, users.size());
-  // return ResponseEntity.ok(new ResponseDto<>(200, users, "Lista de usuarios con
-  // acceso a la carpeta."));
-  // } catch (Exception e) {
-  // log.error("Error listing users with access to folder ID {}: {}", folderId,
-  // e.getMessage());
-  // return new ResponseEntity<>(
-  // new ResponseDto<List<UsuarioDTO>>(500, null, "Error al listar usuarios: " +
-  // e.getMessage()),
-  // HttpStatus.INTERNAL_SERVER_ERROR);
-  // }
-  // }
-  //
-  // // Endpoint para generar enlaces de carpeta compartida
-  // @GetMapping("/share-link/{folderId}")
-  // public ResponseEntity<Map<String, Object>>
-  // generateFolderShareLinks(@PathVariable Long folderId,
-  // @RequestParam Long userId) {
-  // try {
-  // List<String> shareLinks = folderService.generateSharedFolderLinks(folderId,
-  // userId);
-  // if (shareLinks.isEmpty()) {
-  // throw new RuntimeException("No se generaron enlaces para la carpeta.");
-  // }
-  // Map<String, Object> response = new HashMap<>();
-  // response.put("success", true);
-  // response.put("shareLinks", shareLinks);
-  // return ResponseEntity.ok(response);
-  // } catch (RuntimeException e) {
-  // Map<String, Object> errorResponse = new HashMap<>();
-  // errorResponse.put("success", false);
-  // errorResponse.put("message", "Error: " + e.getMessage());
-  // return ResponseEntity.badRequest().body(errorResponse);
-  // }
-  // }
-  //
-  // // Endpoint para obtener carpetas compartidas por dependencia
-  // @GetMapping("/shared/dependency/{dependencyName}")
-  // public ResponseEntity<ResponseDto<List<FolderDto>>>
-  // getSharedFoldersByDependency(
-  // @PathVariable String dependencyName) {
-  // List<FolderDto> sharedFolders =
-  // folderService.getSharedFoldersByDependency(dependencyName);
-  // ResponseDto<List<FolderDto>> response = new ResponseDto<>(200, sharedFolders,
-  // "Carpetas compartidas obtenidas por dependencia.");
-  // return ResponseEntity.ok(response);
-  // }
-  //
-  // // Endpoint para obtener carpetas compartidas con un usuario específico
-  // @GetMapping("/shared/user/{userId}")
-  // public ResponseEntity<ResponseDto<List<FolderDto>>>
-  // getSharedFoldersWithUser(@PathVariable Long userId) {
-  // List<FolderDto> sharedFolders =
-  // folderService.getSharedFoldersWithUser(userId);
-  // ResponseDto<List<FolderDto>> response = new ResponseDto<>(200, sharedFolders,
-  // "Carpetas compartidas con el usuario obtenidas.");
-  // return ResponseEntity.ok(response);
-  // }
+  @GetMapping("/{id}/toggle-privacity")
+  public ResponseEntity<ResponseDto<String>> togglePrivacity(@PathVariable Long id) {
+    var res = folderService.togglePrivacity(id);
+    return ResponseEntity.status(res.getCode()).body(res);
+  }
 }

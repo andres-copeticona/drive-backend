@@ -26,4 +26,10 @@ public class FolderSpecification {
       }
     };
   }
+
+  public static Specification<FolderEntity> filterByString(String column, String value) {
+    return (root, query, criteriaBuilder) -> {
+      return criteriaBuilder.equal(root.get(column), value);
+    };
+  }
 }

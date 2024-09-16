@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 public class FileValidator {
+  public static Integer maxFileSize = 1024 * 1024 * 1024;
+
   public boolean isValidFile(MultipartFile file) {
     final String fileName = file.getOriginalFilename();
     final String contentType = file.getContentType();

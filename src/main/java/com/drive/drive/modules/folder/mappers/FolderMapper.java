@@ -15,7 +15,8 @@ public class FolderMapper {
     FolderEntity folderEntity = new FolderEntity();
     folderEntity.setName(createFolderDto.getName());
     folderEntity.setCreationDate(date);
-    folderEntity.setAccessType("admin");
+    folderEntity.setAccessType("privado");
+    folderEntity.setVisits(0);
     folderEntity.setUpdateDate(date);
     folderEntity.setDeleted(false);
     folderEntity.setCode(code);
@@ -28,6 +29,7 @@ public class FolderMapper {
     folderDto.setName(folderEntity.getName());
     folderDto.setCode(folderEntity.getCode());
     folderDto.setAccessType(folderEntity.getAccessType());
+    folderDto.setVisits(folderEntity.getVisits());
     folderDto.setCreationDate(folderEntity.getCreationDate());
     folderDto.setUpdateDate(folderEntity.getUpdateDate());
     folderDto.setDeleted(folderEntity.getDeleted());

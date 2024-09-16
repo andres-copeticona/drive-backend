@@ -37,7 +37,11 @@ public class FileDto {
 
   private String link;
 
-  private String categoria;
+  private Long qrId;
+
+  private String category;
+
+  private Integer visits;
 
   private Long size;
 

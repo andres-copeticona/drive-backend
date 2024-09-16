@@ -3,12 +3,15 @@ package com.drive.drive.modules.user.controllers;
 import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 import com.drive.drive.modules.user.services.UserService;
 import com.drive.drive.modules.user.dto.*;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +28,8 @@ public class UserController {
   private UserService userService;
 
   @GetMapping("/")
-  public ResponseEntity<ResponseDto<ListResponseDto<List<UserDto>>>> getAllUsers(UserFilter filter) {
+  public ResponseEntity<ResponseDto<ListResponseDto<List<UserDto>>>> getAllUsers(
+      @Parameter(description = "User filter") @Valid @ParameterObject UserFilter filter) {
     log.info("Fetching page {} of users with page size {}", filter);
     var results = userService.findAll(filter);
     return ResponseEntity.status(results.getCode()).body(results);

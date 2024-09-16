@@ -22,4 +22,10 @@ public class FileSpecification {
       return criteriaBuilder.equal(root.get("folder").get("id"), id);
     };
   }
+
+  public static Specification<FileEntity> filterByString(String column, String value) {
+    return (root, query, criteriaBuilder) -> {
+      return criteriaBuilder.equal(root.get(column), value);
+    };
+  }
 }

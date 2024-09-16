@@ -1,6 +1,7 @@
 package com.drive.drive.modules.file.entities;
 
 import com.drive.drive.modules.folder.entities.FolderEntity;
+import com.drive.drive.modules.user.entities.QrCodeEntity;
 import com.drive.drive.modules.user.entities.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,6 +49,9 @@ public class FileEntity {
   @Column(name = "Deleted")
   private Boolean deleted;
 
+  @Column(name = "Visitas")
+  private Integer visits;
+
   @ManyToOne
   @JoinColumn(name = "DocumentoUsuarioID", referencedColumnName = "UsuarioID", nullable = true)
   private UserEntity user;
@@ -60,7 +64,7 @@ public class FileEntity {
   private String minioLink;
 
   @Column(name = "Categoria")
-  private String categoria;
+  private String category;
 
   @Column(name = "Size", nullable = false)
   private Long size = 0L;
@@ -68,4 +72,6 @@ public class FileEntity {
   @Column(name = "FileType")
   private String fileType;
 
+  @OneToOne(mappedBy = "file", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  private QrCodeEntity qrCode;
 }

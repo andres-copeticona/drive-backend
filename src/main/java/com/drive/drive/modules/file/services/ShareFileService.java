@@ -93,4 +93,52 @@ public class ShareFileService {
       return new ResponseDto<>(500, false, "Error al compartir el archivo");
     }
   }
+
+  public ResponseDto<Boolean> shareAll(CreateSharedFileDto createSharedFileDto) {
+    try {
+      UserEntity emisor = userRepository.findById(createSharedFileDto.getEmisorId()).get();
+      FileEntity folder = fileRepository.findById(createSharedFileDto.getId()).get();
+      List<UserEntity> users = userRepository.findAll();
+
+      for (UserEntity user : users) {
+        SharedFileEntity sharedFolder = new SharedFileEntity();
+        sharedFolder.setFile(folder);
+        sharedFolder.setEmisor(emisor);
+        sharedFolder.setReceptor(user);
+        sharedFolder.setType(createSharedFileDto.getType());
+        sharedFolder.setSharedAt(new Date());
+        sharedFileRepository.save(sharedFolder);
+
+        notificationService.sendShareFileNotification(List.of(user.getId()), folder.getTitle(), emisor.getFullname());
+      }
+
+      return new ResponseDto<>(200, true, "Carpeta compartida correctamente");
+    } catch (Exception e) {
+      return new ResponseDto<>(500, false, "Error al compartir la carpeta");
+    }
+  }
+
+  public ResponseDto<Boolean> shareDependency(CreateSharedFileDto createSharedFileDto) {
+    try {
+      UserEntity emisor = userRepository.findById(createSharedFileDto.getEmisorId()).get();
+      FileEntity file = fileRepository.findById(createSharedFileDto.getId()).get();
+      List<UserEntity> users = userRepository.findByDependence(createSharedFileDto.getDependency());
+
+      for (UserEntity user : users) {
+        SharedFileEntity sharedFolder = new SharedFileEntity();
+        sharedFolder.setFile(file);
+        sharedFolder.setEmisor(emisor);
+        sharedFolder.setReceptor(user);
+        sharedFolder.setType(createSharedFileDto.getType());
+        sharedFolder.setSharedAt(new Date());
+        sharedFileRepository.save(sharedFolder);
+
+        notificationService.sendShareFolderNotification(List.of(user.getId()), file.getTitle(), emisor.getFullname());
+      }
+
+      return new ResponseDto<>(200, true, "Archivo compartido correctamente");
+    } catch (Exception e) {
+      return new ResponseDto<>(500, false, "Error al compartir el archivo");
+    }
+  }
 }

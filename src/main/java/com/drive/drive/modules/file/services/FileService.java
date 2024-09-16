@@ -5,6 +5,8 @@ import com.drive.drive.modules.file.dto.CreateFilesDto;
 import com.drive.drive.modules.file.dto.FileDto;
 import com.drive.drive.modules.file.dto.FileFilter;
 import com.drive.drive.modules.file.dto.FileValidator;
+import com.drive.drive.modules.file.dto.SignFileDto;
+import com.drive.drive.modules.file.dto.UsageStorageDto;
 import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.file.entities.SharedFileEntity;
 import com.drive.drive.modules.file.mappers.FileMapper;
@@ -21,8 +23,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.drive.drive.shared.dto.DownloadDto;
 import com.drive.drive.shared.dto.ListResponseDto;
+import com.drive.drive.shared.dto.QrDto;
 import com.drive.drive.shared.dto.ResponseDto;
+import com.drive.drive.modules.user.entities.QrCodeEntity;
 import com.drive.drive.modules.user.entities.UserEntity;
+import com.drive.drive.modules.user.repositories.QrCodeRepository;
 import com.drive.drive.modules.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -55,14 +61,25 @@ public class FileService {
   @Autowired
   private MinioService minioService;
 
+  @Autowired
+  private QrCodeRepository qrCodeRepository;
+
   public ResponseDto<ListResponseDto<List<FileDto>>> uploadMultipleFiles(UserData userData,
       CreateFilesDto createFilesDto) {
     try {
       FileValidator fileValidator = new FileValidator();
+      AtomicLong filesSize = new AtomicLong(0L);
+
       Arrays.asList(createFilesDto.getFiles()).forEach(file -> {
         if (!fileValidator.isValidFile(file))
           throw new IllegalArgumentException("Invalid file type. Only JPG, JPEG, PDF, MP4, and MP3 files are allowed.");
+        filesSize.addAndGet(file.getSize());
       });
+
+      Long currentStorage = getUsageStorage(userData.getUserId()).getData().getTotalUsage();
+
+      if (currentStorage + filesSize.get() > FileValidator.maxFileSize)
+        return new ResponseDto<>(403, null, "No tienes suficiente espacio de almacenamiento");
 
       FolderEntity folder = folderRepository.findById(createFilesDto.getFolderId()).get();
       UserEntity user = userRepository.findById(userData.getUserId()).get();
@@ -127,6 +144,9 @@ public class FileService {
     ResponseDto<FileDto> res = new ResponseDto<FileDto>().setCode(200);
     try {
       FileEntity file = fileRepository.findByCodeAndAccessTypeAndDeletedFalse(code, "publico").get();
+      file.setVisits(file.getVisits() + 1);
+      fileRepository.save(file);
+
       FileDto dto = FileMapper.FileEntityToDto(file);
       dto.setLink(minioService.getDownloadUrl(file.getFolder().getCode(), file.getCode()));
 
@@ -148,6 +168,17 @@ public class FileService {
     }
   }
 
+  public DownloadDto publicDownload(String code) {
+    try {
+      FileEntity file = fileRepository.findByCodeAndAccessTypeAndDeletedFalse(code, "publico").get();
+      byte[] data = minioService.download(file.getFolder().getCode(), file.getCode()).readAllBytes();
+      return new DownloadDto(file.getTitle(), data);
+    } catch (Exception e) {
+      log.error("Error downloading file by code {}: {}", code, e.getMessage());
+      return null;
+    }
+  }
+
   public ResponseDto<Boolean> checkPassword(CheckPasswordDto checkPasswordDto) {
     try {
       FileEntity file = fileRepository.findById(checkPasswordDto.getFileId()).get();
@@ -165,196 +196,6 @@ public class FileService {
     }
   }
 
-  // Método para compartir un archivo
-  // public String shareFile(SharedDocumentDto sharedDocumentDto) {
-  // FileEntity file = fileRepository.findById(sharedDocumentDto.getDocumentoId())
-  // .orElseThrow(() -> new RuntimeException("File not found"));
-  //
-  // UserEntity userToShareWith =
-  // usuarioRepository.findById(sharedDocumentDto.getReceptorUsuarioId())
-  // .orElseThrow(() -> new RuntimeException("User not found"));
-  //
-  // UserEntity userEmisor =
-  // usuarioRepository.findById(sharedDocumentDto.getEmisorUsuarioId())
-  // .orElseThrow(() -> new RuntimeException("User not found"));
-  //
-  // SharedDocumentEntity sharedDocument = new SharedDocumentEntity();
-  // sharedDocument.setDocumento(file);
-  // sharedDocument.setReceptor(userToShareWith);
-  // sharedDocument.setEmisor(userEmisor);
-  // sharedDocument.setCreatedAt(new Date());
-  // sharedDocument.setTipoAcceso(sharedDocumentDto.getTipoAcceso());
-  // sharedDocument.setLinkDocumento(minioService.getDownloadUrl(file.getEtag(),
-  // file.getFolder().getName()));
-  // sharingRepository.save(sharedDocument);
-  //
-  // // Crear notificaciones
-  // notificacionBl.crearNotificacionCompartir(sharedDocumentDto.getEmisorUsuarioId(),
-  // "Documento Compartido",
-  // "Has compartido el documento '" + file.getTitle() + "' con " +
-  // userToShareWith.getNombres() + " "
-  // + userToShareWith.getPaterno(),
-  // "compartido");
-  //
-  // notificacionBl.crearNotificacionCompartir(sharedDocumentDto.getReceptorUsuarioId(),
-  // "Documento Recibido",
-  // "Has recibido un documento compartido '" + file.getTitle() + "' de " +
-  // userEmisor.getNombres() + " "
-  // + userEmisor.getPaterno(),
-  // "compartido");
-  //
-  // return minioService.getDownloadUrl(file.getEtag(),
-  // file.getFolder().getName());
-  // }
-  //
-  // // mostrar los documento compartidos por id de usaurio
-  // public List<SharedDocumentDto> findAllSharedDocumentsByUserId(Long userId) {
-  // List<SharedDocumentEntity> emisorDocuments =
-  // sharingRepository.findByEmisor_UsuarioID(userId);
-  // List<SharedDocumentEntity> receptorDocuments =
-  // sharingRepository.findByReceptor_UsuarioID(userId);
-  //
-  // Set<SharedDocumentEntity> allDocuments = new HashSet<>();
-  // allDocuments.addAll(emisorDocuments);
-  // allDocuments.addAll(receptorDocuments);
-  //
-  // return allDocuments.stream().map(sharedDocument -> {
-  // SharedDocumentDto dto = new SharedDocumentDto();
-  // dto.setCompartidoId(sharedDocument.getCompartidoId());
-  // dto.setDocumentoId(sharedDocument.getDocumento().getId());
-  // dto.setReceptorUsuarioId(sharedDocument.getReceptor().getUsuarioID());
-  // dto.setEmisorUsuarioId(sharedDocument.getEmisor().getUsuarioID());
-  // dto.setTipoAcceso(sharedDocument.getTipoAcceso());
-  // dto.setCreatedAt(sharedDocument.getCreatedAt());
-  // dto.setLinkDocumento(sharedDocument.getLinkDocumento());
-  // dto.setNombreDocumento(sharedDocument.getDocumento().getTitle());
-  //
-  // // Obtener el nombre del emisor y receptor por ID
-  // String emisorNombre =
-  // usuarioRepository.findById(sharedDocument.getEmisor().getUsuarioID()).get().getNombres();
-  // String receptorNombre =
-  // usuarioRepository.findById(sharedDocument.getReceptor().getUsuarioID()).get()
-  // .getNombres();
-  //
-  // // Establecer el nombre del emisor y receptor en el DTO
-  // dto.setEmisorNombre(emisorNombre);
-  // dto.setReceptorNombre(receptorNombre);
-  //
-  // return dto;
-  // }).collect(Collectors.toList());
-  // }
-  //
-  // // Método para listar los archivos por usuario y carpeta
-  // public FolderContentsDto listFilesByUserAndFolder(Long userId, Long folderId)
-  // {
-  // // Sólo incluir archivos y carpetas no eliminados
-  // List<FileEntity> files =
-  // fileRepository.findByUser_UsuarioIDAndFolder_IdAndDeletedFalse(userId,
-  // folderId);
-  // List<FolderEntity> subFolders =
-  // folderRepository.findByParentFolder_IdAndDeletedFalse(folderId);
-  //
-  // List<FileDto> fileDtos = files.stream().map(file -> {
-  // FileDto dto = new FileDto();
-  // dto.setId(file.getId());
-  // dto.setTitle(file.getTitle());
-  // dto.setDescription(file.getDescription());
-  // dto.setEtag(file.getEtag());
-  // dto.setAccessType(file.getAccessType());
-  // dto.setSize(file.getSize());
-  // dto.setPassword(file.getPassword());
-  // dto.setCreatedDate(file.getCreatedDate());
-  // dto.setModifiedDate(file.getModifiedDate());
-  // // No es necesario setear deleted porque solo incluimos no eliminados
-  // dto.setCategoria(file.getCategoria());
-  // dto.setMinioLink(minioService.getDownloadUrl(file.getFolder().getCode(),
-  // file.getCode()));
-  // if (file.getUser() != null) {
-  // dto.setUserId(file.getUser().getUsuarioID());
-  // }
-  // if (file.getFolder() != null) {
-  // dto.setFolderId(file.getFolder().getId());
-  // }
-  // return dto;
-  // }).collect(Collectors.toList());
-  //
-  // List<FolderDto> folderDtos = subFolders.stream().map(folder -> {
-  // FolderDto dto = new FolderDto();
-  // dto.setId(folder.getId());
-  // dto.setName(folder.getName());
-  // dto.setAccessType(folder.getAccessType());
-  // dto.setCreationDate(folder.getCreationDate());
-  // dto.setUpdateDate(folder.getUpdateDate());
-  // // No es necesario setear deleted porque solo incluimos no eliminados
-  // if (folder.getUser() != null) {
-  // dto.setUserId(folder.getUser().getUsuarioID());
-  // }
-  // if (folder.getParentFolder() != null) {
-  // dto.setParentFolderId(folder.getParentFolder().getId());
-  // }
-  // return dto;
-  // }).collect(Collectors.toList());
-  //
-  // return new FolderContentsDto(folderDtos, fileDtos);
-  // }
-  //
-  // // Método para obtener un archivo por ID
-  // public FileDto getFileById(Long fileId) {
-  // return fileRepository.findById(fileId)
-  // .map(file -> {
-  // FileDto dto = new FileDto();
-  // dto.setId(file.getId());
-  // dto.setTitle(file.getTitle());
-  // dto.setDescription(file.getDescription());
-  // dto.setEtag(file.getEtag());
-  // dto.setAccessType(file.getAccessType());
-  // dto.setPassword(file.getPassword());
-  // dto.setCategoria(file.getCategoria());
-  // dto.setSize(file.getSize());
-  // dto.setCreatedDate(file.getCreatedDate());
-  // dto.setModifiedDate(file.getModifiedDate());
-  // dto.setDeleted(file.getDeleted());
-  // dto.setMinioLink(minioService.getDownloadUrl(file.getEtag(),
-  // file.getFolder().getName()));
-  // if (file.getUser() != null) {
-  // dto.setUserId(file.getUser().getUsuarioID());
-  // }
-  // if (file.getFolder() != null) {
-  // dto.setFolderId(file.getFolder().getId());
-  // }
-  // return dto;
-  // }).orElse(null); // Retorna null si no se encuentra el archivo
-  // }
-  //
-  // // Método para encontrar todos los archivos públicos
-  // public List<FileDto> findAllPublicFiles() {
-  // List<FileEntity> files =
-  // fileRepository.findByAccessTypeAndDeletedFalse("publico");
-  // return files.stream().map(file -> {
-  // FileDto dto = new FileDto();
-  // dto.setId(file.getId());
-  // dto.setTitle(file.getTitle());
-  // dto.setDescription(file.getDescription());
-  // dto.setEtag(file.getEtag());
-  // dto.setAccessType(file.getAccessType());
-  // dto.setPassword(file.getPassword());
-  // dto.setSize(file.getSize());
-  // dto.setCategoria(file.getCategoria());
-  // dto.setCreatedDate(file.getCreatedDate());
-  // dto.setModifiedDate(file.getModifiedDate());
-  // dto.setDeleted(file.getDeleted());
-  // dto.setMinioLink(minioService.getDownloadUrl(file.getEtag(),
-  // file.getFolder().getName()));
-  // if (file.getUser() != null) {
-  // dto.setUserId(file.getUser().getUsuarioID());
-  // }
-  // if (file.getFolder() != null) {
-  // dto.setFolderId(file.getFolder().getId());
-  // }
-  // return dto;
-  // }).collect(Collectors.toList());
-  // }
-  //
   public ResponseDto<Boolean> deleteFile(Long fileId) {
     try {
       FileEntity file = fileRepository.findById(fileId)
@@ -378,151 +219,63 @@ public class FileService {
     }
   }
 
-  // // Método para encontrar los archivos por categoría y usuario
-  // public List<FileDto> findFilesByCategoryAndUser(String categoria, Long
-  // userId) {
-  // List<FileEntity> files =
-  // fileRepository.findByCategoriaAndUser_UsuarioIDAndDeletedFalse(categoria,
-  // userId);
-  // return files.stream().map(this::mapToFileDto).collect(Collectors.toList());
-  // }
+  public ResponseDto<UsageStorageDto> getUsageStorage(Long userId) {
+    try {
+      userRepository.findById(userId).get();
+      List<FileEntity> files = fileRepository.findByUser_idAndDeletedFalse(userId);
+      UsageStorageDto usageStorageDto = FileMapper.FileEntityToUsageStorageDto(files);
 
-  // // Actualiza la categoría de un archivo
-  // public String updateFileCategory(Long fileId, String newCategory) {
-  // if (!newCategory.equals("Nuevo") && !newCategory.equals("Reemplazado") &&
-  // !newCategory.equals("Sellado")) {
-  // throw new IllegalArgumentException(
-  // "Categoría inválida. Las categorías válidas son: Nuevo, Reemplazado,
-  // Sellado.");
-  // }
+      return new ResponseDto<>(200, usageStorageDto, "Uso de almacenamiento obtenido correctamente");
+    } catch (Exception e) {
+      log.error("Error getting disk usage for user {}: {}", userId, e.getMessage());
+      return new ResponseDto<>(500, null, "Error al obtener el uso de almacenamiento");
+    }
+  }
 
-  // FileEntity file = fileRepository.findById(fileId)
-  // .orElseThrow(() -> new RuntimeException("Archivo no encontrado con ID: " +
-  // fileId));
-  //
-  // file.setCategoria(newCategory);
-  // file.setModifiedDate(new Date()); // Actualiza la fecha de modificación del
-  // archivo
-  // fileRepository.save(file);
-  //
-  // return "La categoría del archivo ha sido actualizada a: " + newCategory;
-  // }
-  //
-  // public Map<String, Long> countCategoriesByUser(Long userId) {
-  // List<FileEntity> files =
-  // fileRepository.findByUser_UsuarioIDAndDeletedFalse(userId);
-  // Map<String, Long> categoryCounts = files.stream()
-  // .collect(Collectors.groupingBy(file -> file.getCategoria() == null ? "Sin
-  // categoría" : file.getCategoria(),
-  // Collectors.counting()));
-  //
-  // // Asegúrate de incluir todas las categorías en el mapa, incluso si no tienen
-  // // archivos.
-  // String[] categories = new String[] { "Nuevo", "Reemplazado", "Sellado", "Sin
-  // categoría" };
-  // for (String category : categories) {
-  // categoryCounts.putIfAbsent(category, 0L);
-  // }
-  //
-  // return categoryCounts;
-  // }
-  //
-  // public Map<String, List<String>> findAllSharedDocumentsUsersByUserId(Long
-  // userId) {
-  // List<SharedDocumentEntity> sharedDocumentsAsEmisor =
-  // sharingRepository.findByEmisor_UsuarioID(userId);
-  // List<SharedDocumentEntity> sharedDocumentsAsReceptor =
-  // sharingRepository.findByReceptor_UsuarioID(userId);
-  //
-  // Set<String> emisorNames = new HashSet<>();
-  // Set<String> receptorNames = new HashSet<>();
-  //
-  // for (SharedDocumentEntity sharedDocument : sharedDocumentsAsEmisor) {
-  // UserEntity receptor = sharedDocument.getReceptor();
-  // receptorNames.add(receptor.getNombres()); // Asume que 'getNombres()' retorna
-  // el nombre del usuario
-  // }
-  //
-  // for (SharedDocumentEntity sharedDocument : sharedDocumentsAsReceptor) {
-  // UserEntity emisor = sharedDocument.getEmisor();
-  // emisorNames.add(emisor.getNombres());
-  // }
-  //
-  // Map<String, List<String>> result = new HashMap<>();
-  // result.put("sharedWithMe", new ArrayList<>(emisorNames));
-  // result.put("iSharedWith", new ArrayList<>(receptorNames));
-  //
-  // return result;
-  // }
-  //
-  // public Map<String, Object> getFileStatsByUserId(Long userId) {
-  // List<FileEntity> files =
-  // fileRepository.findByUser_UsuarioIDAndDeletedFalse(userId);
-  // long totalSize = 0L;
-  // Map<String, Long> countByFileType = new HashMap<>();
-  // Map<String, Double> sizeByFileType = new HashMap<>();
-  //
-  // for (FileEntity file : files) {
-  // String fileType = file.getFileType(); // Asegúrate de que este método retorna
-  // el tipo de archivo correctamente
-  // Long fileSize = (file.getSize() == null) ? 0L : file.getSize();
-  // totalSize += fileSize;
-  // countByFileType.merge(fileType, 1L, Long::sum);
-  // sizeByFileType.merge(fileType, (double) fileSize, Double::sum);
-  // }
-  //
-  // Map<String, String> sizeByFileTypeFormatted = new HashMap<>();
-  // for (Map.Entry<String, Double> entry : sizeByFileType.entrySet()) {
-  // sizeByFileTypeFormatted.put(entry.getKey(),
-  // convertSizeToReadableFormat(entry.getValue()));
-  // }
-  //
-  // Map<String, Object> stats = new HashMap<>();
-  // stats.put("TotalSize", convertSizeToReadableFormat(totalSize));
-  // stats.put("CountByFileType", countByFileType);
-  // stats.put("SizeByFileType", sizeByFileTypeFormatted);
-  //
-  // return stats;
-  // }
-  //
-  // private String convertSizeToReadableFormat(double size) {
-  // final double KB = 1024.0;
-  // final double MB = KB * 1024;
-  // final double GB = MB * 1024;
-  //
-  // if (size < KB)
-  // return String.format("%.0f B", size);
-  // if (size < MB)
-  // return String.format("%.2f KB", size / KB);
-  // if (size < GB)
-  // return String.format("%.2f MB", size / MB);
-  // return String.format("%.2f GB", size / GB);
-  // }
-  //
-  // public Map<String, Object> getTotalStorageUsedByUser(Long userId) {
-  // return getFileStatsByUserId(userId);
-  // }
-  //
-  // public List<SharedDocumentDto> findSharedDocumentsBetweenUsers(Long emisorId,
-  // Long receptorId) {
-  // List<SharedDocumentEntity> sharedDocuments =
-  // sharingRepository.findSharedDocumentsBetweenUsers(emisorId,
-  // receptorId);
-  // return sharedDocuments.stream().map(document -> {
-  // SharedDocumentDto dto = new SharedDocumentDto();
-  // dto.setCompartidoId(document.getCompartidoId());
-  // dto.setDocumentoId(document.getDocumento().getId());
-  // dto.setReceptorUsuarioId(document.getReceptor().getUsuarioID());
-  // dto.setEmisorUsuarioId(document.getEmisor().getUsuarioID());
-  // dto.setTipoAcceso(document.getTipoAcceso());
-  // dto.setCreatedAt(document.getCreatedAt());
-  // dto.setLinkDocumento(
-  // minioService.getDownloadUrl(document.getDocumento().getEtag(),
-  // document.getDocumento().getFolder().getName()));
-  // dto.setNombreDocumento(document.getDocumento().getTitle());
-  // dto.setCategoria(document.getDocumento().getCategoria());
-  // // Obtener y establecer los nombres de emisor y receptor si es necesario
-  // return dto;
-  // }).collect(Collectors.toList());
-  // }
+  public ResponseDto<QrDto> signFile(SignFileDto signFileDto) {
+    try {
+      FileEntity file = fileRepository.findById(Long.valueOf(signFileDto.getFileId())).get();
+      file.setCategory("Sellado");
+      QrCodeEntity qrCode = new QrCodeEntity();
+      if (file.getQrCode() != null)
+        qrCode = file.getQrCode();
+      else {
+        qrCode.setVisits(0);
+        qrCode.setCreationDate(new Date());
+      }
+      qrCode.setFile(file);
+      qrCode.setEmitter(file.getUser());
+      qrCode.setTitle(signFileDto.getTitle());
+      qrCode.setMessage(signFileDto.getDescription());
+      qrCode.setCodeQr(signFileDto.getQrCode());
+      qrCode = qrCodeRepository.save(qrCode);
+
+      file.setQrCode(qrCode);
+      fileRepository.save(file);
+
+      minioService.replaceObject(file, file.getFolder(), signFileDto.getFile());
+
+      QrDto qrDto = new QrDto();
+      qrDto.setFile(FileMapper.FileEntityToDto(file));
+      qrDto.setQrCode(qrCode.getCodeQr());
+
+      qrDto.getFile().setLink(minioService.getDownloadUrl(file.getFolder().getCode(), file.getCode()));
+
+      return new ResponseDto<>(200, qrDto, "Archivo firmado correctamente");
+    } catch (Exception e) {
+      log.error("Error signing file: {}", e.getMessage());
+      return new ResponseDto<>(500, null, "Error al firmar el archivo");
+
+    }
+  }
+
+  public ResponseDto<String> getQrCode(Long id) {
+    try {
+      QrCodeEntity qr = qrCodeRepository.findById(id).get();
+      return new ResponseDto<>(200, qr.getCodeQr(), "Código QR obtenido correctamente");
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      return new ResponseDto<>(500, null, "Error al obtener el código QR");
+    }
+  }
 }

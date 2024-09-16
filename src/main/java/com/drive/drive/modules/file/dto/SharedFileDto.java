@@ -11,7 +11,7 @@ import com.drive.drive.modules.user.dto.UserDto;
 @NoArgsConstructor
 public class SharedFileDto {
   private Long id;
-  private UserDto emisor;
+  private UserDto emitter;
   private UserDto receptor;
   private FileDto file;
   private Date sharedAt;
