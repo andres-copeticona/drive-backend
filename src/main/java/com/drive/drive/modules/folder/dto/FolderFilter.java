@@ -48,5 +48,4 @@ public class FolderFilter extends BaseFilter<FolderEntity> {
 
     return spec;
   }
-
 }

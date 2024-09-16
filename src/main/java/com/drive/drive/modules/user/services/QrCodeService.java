@@ -4,21 +4,29 @@ import com.drive.drive.modules.file.dto.FileDto;
 import com.drive.drive.modules.file.entities.FileEntity;
 import com.drive.drive.modules.file.mappers.FileMapper;
 import com.drive.drive.modules.qr.dto.QrCodeDto;
+import com.drive.drive.modules.qr.dto.QrCodeFilter;
+import com.drive.drive.modules.qr.mappers.QrCodeMapper;
 import com.drive.drive.modules.user.entities.QrCodeEntity;
 import com.drive.drive.modules.user.mappers.UserMapper;
 import com.drive.drive.modules.user.repositories.QrCodeRepository;
+import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.services.MinioService;
 
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.security.SecureRandom;
 
 @Slf4j
@@ -33,6 +41,32 @@ public class QrCodeService {
 
   private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
   private final Random random = new SecureRandom();
+
+  public ResponseDto<ListResponseDto<List<QrCodeDto>>> listQrCodes(QrCodeFilter filter) {
+    try {
+      Specification<QrCodeEntity> spec = filter.getSpecification();
+      Sort sort = filter.getSort();
+      Pageable pageable = filter.getPageable();
+
+      List<QrCodeEntity> qrCodes;
+      Long total = 0L;
+
+      if (pageable == null) {
+        qrCodes = qrCodeRepository.findAll(spec, sort);
+        total = Long.valueOf(qrCodes.size());
+      } else {
+        var res = qrCodeRepository.findAll(spec, pageable);
+        qrCodes = res.getContent();
+        total = res.getTotalElements();
+      }
+
+      List<QrCodeDto> dtos = qrCodes.stream().map(QrCodeMapper::entityToDto).collect(Collectors.toList());
+      return new ResponseDto<>(200, new ListResponseDto<>(dtos, total), "Lista de qrcodes obtenida correctamente.");
+    } catch (Exception e) {
+      log.error(e.getMessage());
+      return new ResponseDto<>(500, null, "Error obteniendo la lista de qrcodes");
+    }
+  }
 
   // Método para guardar un nuevo código QR
   public QrCodeEntity saveQrCode(QrCodeEntity qrCode) {

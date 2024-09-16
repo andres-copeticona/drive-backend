@@ -2,14 +2,19 @@ package com.drive.drive.modules.user.controllers;
 
 import com.drive.drive.modules.user.services.QrCodeService;
 import com.drive.drive.security.IsPublic;
+import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.modules.qr.dto.QrCodeDto;
+import com.drive.drive.modules.qr.dto.QrCodeFilter;
 import com.drive.drive.modules.user.entities.QrCodeEntity;
+
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -18,6 +23,13 @@ public class QrCodeController {
 
   @Autowired
   private QrCodeService qrCodeService;
+
+  @GetMapping("/")
+  public ResponseEntity<ResponseDto<ListResponseDto<List<QrCodeDto>>>> listAllQrCodes(
+      @ParameterObject QrCodeFilter filter) {
+    var res = qrCodeService.listQrCodes(filter);
+    return ResponseEntity.status(res.getCode()).body(res);
+  }
 
   // Endpoint para guardar un nuevo código QR
   @PostMapping("/save")

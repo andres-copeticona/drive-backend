@@ -17,6 +17,7 @@ public class QrCodeDto {
   private UserDto emitter;
   private String title;
   private String message;
+  private String code;
   private Date creationDate;
   private FileDto file;
   private Integer visits;

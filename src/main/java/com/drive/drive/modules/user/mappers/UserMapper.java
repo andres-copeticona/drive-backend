@@ -3,7 +3,7 @@ package com.drive.drive.modules.user.mappers;
 import java.sql.Timestamp;
 import java.util.Date;
 
-import com.drive.drive.modules.auth.dto.GadcLoginResponseDto;
+//import com.drive.drive.modules.auth.dto.GadcLoginResponseDto;
 import com.drive.drive.modules.user.dto.RoleDto;
 import com.drive.drive.modules.user.dto.UserDto;
 import com.drive.drive.modules.user.entities.UserEntity;
@@ -56,27 +56,28 @@ public class UserMapper {
 
   }
 
-  public static UserEntity loginDtoToEntity(GadcLoginResponseDto login) {
-    UserEntity user = new UserEntity();
-    user.setIdServer(login.getIdServidor());
-    user.setNames(login.getNombres());
-    user.setFirstSurname(login.getPaterno());
-    user.setSecondSurname(login.getMaterno());
-    user.setCellphone(login.getCelular());
-    user.setAddress(login.getDomicilio());
-    user.setCi(login.getCi());
-    user.setState(login.isStatus() ? "Activo" : "Inactivo");
-    user.setPosition(login.getCargo());
-    user.setDependence(login.getDependencia());
-    user.setAcronym(login.getSigla());
-    user.setUsername(login.getUsuario());
-    user.setPassword("ENCRYPTED_PASSWORD");
-    user.setRole(login.getRole());
-    user.setCreatedAt(new Date());
-    user.setUpdatedAt(login.getUpdatedAt() != null ? java.sql.Timestamp.valueOf(login.getUpdatedAt()) : null);
-    user.setStatus(login.isStatus());
-    user.setDeleted(false);
-
-    return user;
-  }
+  // public static UserEntity loginDtoToEntity(GadcLoginResponseDto login) {
+  // UserEntity user = new UserEntity();
+  // user.setIdServer(login.getIdServidor());
+  // user.setNames(login.getNombres());
+  // user.setFirstSurname(login.getPaterno());
+  // user.setSecondSurname(login.getMaterno());
+  // user.setCellphone(login.getCelular());
+  // user.setAddress(login.getDomicilio());
+  // user.setCi(login.getCi());
+  // user.setState(login.isStatus() ? "Activo" : "Inactivo");
+  // user.setPosition(login.getCargo());
+  // user.setDependence(login.getDependencia());
+  // user.setAcronym(login.getSigla());
+  // user.setUsername(login.getUsuario());
+  // user.setPassword("ENCRYPTED_PASSWORD");
+  // user.setRole(login.getRole());
+  // user.setCreatedAt(new Date());
+  // user.setUpdatedAt(login.getUpdatedAt() != null ?
+  // java.sql.Timestamp.valueOf(login.getUpdatedAt()) : null);
+  // user.setStatus(login.isStatus());
+  // user.setDeleted(false);
+  //
+  // return user;
+  // }
 }
