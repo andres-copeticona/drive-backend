@@ -21,6 +21,8 @@ public interface FolderRepository extends JpaRepository<FolderEntity, Long>, Jpa
 
   List<FolderEntity> findByParentFolder_Id(Long parentFolderId);
 
+  List<FolderEntity> findByParentFolderIsNullAndUser_id(Long userId);
+
   Optional<FolderEntity> findByCodeAndAccessTypeAndDeletedFalse(String code, String accessType);
 
   List<FolderEntity> findByParentFolder_IdAndDeletedFalse(Long parentFolderId);

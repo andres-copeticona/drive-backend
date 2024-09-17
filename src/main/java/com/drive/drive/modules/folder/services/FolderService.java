@@ -181,7 +181,20 @@ public class FolderService {
 
       if (parentFolderId != null) {
         FolderEntity parentFolder = folderRepository.findById(parentFolderId).get();
+        List<FolderEntity> childFolders = folderRepository.findByParentFolder_Id(parentFolderId);
+        for (FolderEntity childFolder : childFolders) {
+          if (childFolder.getName().equals(folder.getName())) {
+            return new ResponseDto<>(400, false, "Ya existe una carpeta con ese nombre.");
+          }
+        }
         folder.setParentFolder(parentFolder);
+      } else {
+        List<FolderEntity> rootFolders = folderRepository.findByParentFolderIsNullAndUser_id(userId);
+        for (FolderEntity childFolder : rootFolders) {
+          if (childFolder.getName().equals(folder.getName())) {
+            return new ResponseDto<>(400, false, "Ya existe una carpeta con ese nombre.");
+          }
+        }
       }
 
       folderRepository.save(folder);
