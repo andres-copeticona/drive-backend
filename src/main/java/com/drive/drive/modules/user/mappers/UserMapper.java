@@ -71,7 +71,6 @@ public class UserMapper {
     user.setAcronym(login.getSigla());
     user.setUsername(login.getUsuario());
     user.setPassword("ENCRYPTED_PASSWORD");
-    user.setRole(login.getRole());
     user.setCreatedAt(new Date());
     user.setUpdatedAt(login.getUpdatedAt() != null ? java.sql.Timestamp.valueOf(login.getUpdatedAt()) : null);
     user.setStatus(login.isStatus());

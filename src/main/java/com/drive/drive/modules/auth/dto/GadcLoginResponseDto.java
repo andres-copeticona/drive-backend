@@ -2,7 +2,6 @@ package com.drive.drive.modules.auth.dto;
 
 import java.time.LocalDateTime;
 
-import com.drive.drive.modules.user.entities.RoleEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
@@ -23,7 +22,6 @@ public class GadcLoginResponseDto {
   private String cargo;
   private String dependencia;
   private String sigla;
-  private RoleEntity role;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private boolean deleted;

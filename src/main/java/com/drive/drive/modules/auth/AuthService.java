@@ -69,7 +69,6 @@ public class AuthService {
     var res = new ResponseDto<LoginResponseDto>().setCode(200);
 
     try {
-      log.info("Authenticating user: {}", loginDto.getLogin());
       var response = loginToGadc(loginDto);
 
       if (response.getStatusCode() != HttpStatus.OK)
@@ -78,13 +77,13 @@ public class AuthService {
       Map<String, Object> responseBody = response.getBody();
 
       if (responseBody == null || responseBody.get("data") == null)
-        throw new RestClientException("Failed to authenticate user with external API");
+        throw new RestClientException("Failed to parse data from external API");
 
       @SuppressWarnings("unchecked")
       List<Map<String, Object>> usersData = (List<Map<String, Object>>) responseBody.get("data");
 
-      if (!usersData.isEmpty())
-        throw new RestClientException("Failed to authenticate user with external API");
+      if (usersData.isEmpty())
+        throw new RestClientException("Failed to authenticate user with out data");
 
       Map<String, Object> userData = usersData.get(0);
       GadcLoginResponseDto loginResponseDto = new ObjectMapper().convertValue(userData,
@@ -98,8 +97,9 @@ public class AuthService {
         user = existingUsuario.get();
       } else {
         RoleEntity rolUsuario = roleRepository.findById(1L).get();
-        loginResponseDto.setRole(rolUsuario);
-        user = userRepository.save(UserMapper.loginDtoToEntity(loginResponseDto));
+        UserEntity userEntity = UserMapper.loginDtoToEntity(loginResponseDto);
+        userEntity.setRole(rolUsuario);
+        user = userRepository.save(userEntity);
       }
 
       Map<String, Object> claims = new HashMap<>();
