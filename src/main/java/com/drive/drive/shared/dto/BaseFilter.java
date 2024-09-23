@@ -27,13 +27,19 @@ public abstract class BaseFilter<T> extends Object {
   @Parameter(description = "Search term", example = "example", required = false)
   protected String searchTerm;
 
+  @Parameter(description = "Show all records", example = "false", required = false)
+  protected boolean showAll = false;
+
   public Sort getSort() {
     Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
     return sort;
   }
 
   public Pageable getPageable() {
-    return PageRequest.of(page, size, getSort());
+    if (showAll)
+      return Pageable.unpaged(getSort());
+    else
+      return PageRequest.of(page, size, getSort());
   }
 
   public abstract Specification<T> getSpecification();
