@@ -11,7 +11,6 @@ import java.util.Arrays;
 @Configuration
 public class CorsConfig {
 
-  // Configuración de CORS para permitir peticiones desde el front-end
   @Bean
   public CorsFilter corsFilter() {
     CorsConfiguration corsConfiguration = new CorsConfiguration();

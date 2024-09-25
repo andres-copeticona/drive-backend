@@ -1,0 +1,42 @@
+server:
+  port: 8080
+  forward-headers-strategy: native
+  servlet:
+    contextPath: /api
+
+spring:
+  datasource:
+    url: jdbc:postgresql://192.168.0.114:5432/db_drive
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 5GB
+      max-request-size: 5GB
+
+minio:
+  url: http://192.168.0.114:9000
+  access-key: minio
+  secret-key: minio123
+
+debug: false
+logging:
+  level:
+    org:
+      springframework: INFO
+
+external-api:
+  authentication-url: http://correspondencia.gobernaciondecochabamba.bo/Restserver/singin
+  token: servidoresgadc12345
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
