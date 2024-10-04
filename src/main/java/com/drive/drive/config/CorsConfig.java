@@ -16,7 +16,7 @@ public class CorsConfig {
     CorsConfiguration corsConfiguration = new CorsConfiguration();
     corsConfiguration.setAllowCredentials(false);
     corsConfiguration.setAllowedOrigins(
-        Arrays.asList("http://localhost:4200", "http://localhost:4000"));
+        Arrays.asList("http://doc.gobernaciondecochabamba.bo"));
     corsConfiguration.setAllowedHeaders(
         Arrays.asList("Origin", "Content-Length",
             "Access-Control-Allow-Origin",
