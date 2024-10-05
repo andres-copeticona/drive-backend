@@ -19,6 +19,7 @@ import com.drive.drive.shared.services.MinioService;
 import com.drive.drive.shared.services.SendNotificationService;
 import com.drive.drive.shared.utils.PasswordUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import com.drive.drive.shared.dto.DownloadDto;
@@ -65,7 +66,7 @@ public class FileService {
   private QrCodeRepository qrCodeRepository;
 
   public ResponseDto<ListResponseDto<List<FileDto>>> uploadMultipleFiles(UserData userData,
-      CreateFilesDto createFilesDto) {
+      CreateFilesDto createFilesDto, HttpServletRequest request) {
     try {
       FileValidator fileValidator = new FileValidator();
       AtomicLong filesSize = new AtomicLong(0L);
@@ -85,12 +86,17 @@ public class FileService {
       UserEntity user = userRepository.findById(userData.getUserId()).get();
       List<FileDto> fileDtos = new ArrayList<>();
 
+      String fileNames = Arrays.stream(createFilesDto.getFiles()).map(MultipartFile::getOriginalFilename)
+          .collect(Collectors.joining(", "));
+
       for (MultipartFile file : createFilesDto.getFiles()) {
         FileEntity fileEntity = FileMapper.createFilesDtoToFileEntity(createFilesDto, file, folder);
         fileEntity.setUser(user);
         fileDtos.add(FileMapper.FileEntityToDto(fileRepository.save(fileEntity)));
         minioService.addObject(fileEntity, folder, file);
       }
+
+      request.setAttribute("log_description", "Subiendo archivos con nombres: " + fileNames);
 
       return new ResponseDto<>(201, new ListResponseDto<List<FileDto>>(fileDtos, Long.valueOf(fileDtos.size())),
           "Archivos cargados correctamente");
@@ -196,7 +202,7 @@ public class FileService {
     }
   }
 
-  public ResponseDto<Boolean> deleteFile(Long fileId) {
+  public ResponseDto<Boolean> deleteFile(Long fileId, HttpServletRequest request) {
     try {
       FileEntity file = fileRepository.findById(fileId)
           .orElseThrow(() -> new RuntimeException("File not found"));
@@ -211,6 +217,8 @@ public class FileService {
       minioService.deleteObject(file);
 
       fileRepository.delete(file);
+
+      request.setAttribute("log_description", "Eliminando archivo con nombre: " + file.getTitle());
 
       return new ResponseDto<>(200, true, "Archivo eliminado correctamente");
     } catch (Exception e) {

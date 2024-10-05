@@ -28,6 +28,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,18 +58,19 @@ public class SharedFileController {
   @ActivityLogger(description = "Compartir archivo", action = "Compartir")
   public ResponseEntity<ResponseDto<Boolean>> share(
       @AccessUser UserData user,
-      @RequestBody CreateSharedFileDto createSharedFileDto) {
+      @Valid @RequestBody CreateSharedFileDto createSharedFileDto,
+      HttpServletRequest request) {
     log.info("Share file {}, with {}", createSharedFileDto.getId(), createSharedFileDto.getReceptorIds());
     createSharedFileDto.setEmisorId(user.getUserId());
-    var res = sharedFileService.share(createSharedFileDto);
+    var res = sharedFileService.share(createSharedFileDto, request);
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
   @PostMapping("/all")
-  @ActivityLogger(description = "Compartir carpeta con todos los usuarios", action = "Compartir")
+  @ActivityLogger(description = "Compartir archivo con todos los usuarios", action = "Compartir")
   public ResponseEntity<ResponseDto<Boolean>> shareAll(
       @AccessUser UserData user,
-      @RequestBody CreateSharedFileDto createShareFileDto) {
+      @Valid @RequestBody CreateSharedFileDto createShareFileDto) {
     log.info("Share file {}, with all users", createShareFileDto.getId());
     createShareFileDto.setEmisorId(user.getUserId());
     var res = sharedFileService.shareAll(createShareFileDto);
@@ -76,13 +78,18 @@ public class SharedFileController {
   }
 
   @PostMapping("/dependency")
-  @ActivityLogger(description = "Compartir carpeta con todos los usuarios", action = "Compartir")
+  @ActivityLogger(description = "Compartir archivo con todos los usuarios de una dependencia", action = "Compartir")
   public ResponseEntity<ResponseDto<Boolean>> shareDependency(
       @AccessUser UserData user,
-      @RequestBody CreateSharedFileDto createShareFileDto) {
+      @Valid @RequestBody CreateSharedFileDto createShareFileDto,
+      HttpServletRequest request) {
     log.info("Share file {}, with {}", createShareFileDto.getId(), createShareFileDto.getDependency());
     createShareFileDto.setEmisorId(user.getUserId());
     var res = sharedFileService.shareDependency(createShareFileDto);
+    if (res.getCode() == 200)
+      request.setAttribute("log_description",
+          "Compartir archivo con la dependencia: " + createShareFileDto.getDependency());
+
     return ResponseEntity.status(res.getCode()).body(res);
   }
 }

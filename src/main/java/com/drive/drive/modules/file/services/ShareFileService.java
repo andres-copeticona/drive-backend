@@ -24,6 +24,7 @@ import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.services.SendNotificationService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -69,10 +70,12 @@ public class ShareFileService {
     }
   }
 
-  public ResponseDto<Boolean> share(CreateSharedFileDto shareFolderDto) {
+  public ResponseDto<Boolean> share(CreateSharedFileDto shareFolderDto, HttpServletRequest request) {
     try {
       UserEntity emisor = userRepository.findById(shareFolderDto.getEmisorId()).get();
       FileEntity file = fileRepository.findById(shareFolderDto.getId()).get();
+
+      String receptorNames = "";
 
       for (Long id : shareFolderDto.getReceptorIds()) {
         UserEntity user = userRepository.findById(id).get();
@@ -83,10 +86,14 @@ public class ShareFileService {
         sharedFolder.setType(shareFolderDto.getType());
         sharedFolder.setSharedAt(new Date());
         sharedFileRepository.save(sharedFolder);
+        receptorNames += user.getFullname() + ", ";
       }
 
       notificationService.sendShareFileNotification(
           shareFolderDto.getReceptorIds(), file.getTitle(), emisor.getFullname());
+
+      request.setAttribute("log_description",
+          "Archivo compartido " + file.getTitle() + " con " + receptorNames);
 
       return new ResponseDto<>(200, true, "Archivo compartido correctamente");
     } catch (Exception e) {

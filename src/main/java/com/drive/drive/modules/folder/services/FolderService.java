@@ -16,6 +16,8 @@ import com.drive.drive.shared.services.MinioService;
 import com.drive.drive.shared.services.SendNotificationService;
 import com.drive.drive.modules.user.entities.UserEntity;
 import com.drive.drive.modules.user.repositories.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -206,7 +208,7 @@ public class FolderService {
   }
 
   @Transactional
-  public ResponseDto<Boolean> deleteFolder(Long folderId) {
+  public ResponseDto<Boolean> deleteFolder(Long folderId, HttpServletRequest request) {
     try {
       List<Long> userIds = sharedFolderRepository.findUserIdsByFolderId(folderId);
       FolderEntity folder = folderRepository.findById(folderId).get();
@@ -217,6 +219,9 @@ public class FolderService {
       folderRepository.deleteById(folderId);
       folderRepository.clearParentFolderReferences(folderId);
       folderRepository.deleteById(folderId);
+
+      request.setAttribute("log_description", "Eliminó la carpeta: " + folder.getName());
+
       return new ResponseDto<>(200, true, "Carpeta eliminada correctamente");
     } catch (Exception e) {
       return new ResponseDto<>(500, false, "Error al eliminar la carpeta");

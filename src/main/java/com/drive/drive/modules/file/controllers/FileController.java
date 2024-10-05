@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springdoc.core.annotations.ParameterObject;
@@ -160,9 +161,9 @@ public class FileController {
   @PostMapping(path = "/upload", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
   @ActivityLogger(description = "Subiendo archivo", action = "Subir")
   public ResponseEntity<ResponseDto<ListResponseDto<List<FileDto>>>> uploadFiles(@AccessUser UserData userData,
-      @Valid @ModelAttribute CreateFilesDto createFilesDto) {
+      @Valid @ModelAttribute CreateFilesDto createFilesDto, HttpServletRequest request) {
     log.info("Uploading files...");
-    var uploadedFiles = fileService.uploadMultipleFiles(userData, createFilesDto);
+    var uploadedFiles = fileService.uploadMultipleFiles(userData, createFilesDto, request);
     return ResponseEntity.status(uploadedFiles.getCode()).body(uploadedFiles);
   }
 
@@ -173,9 +174,9 @@ public class FileController {
   })
   @DeleteMapping("/{fileId}")
   @ActivityLogger(description = "Eliminando archivo", action = "Eliminar")
-  public ResponseEntity<ResponseDto<Boolean>> deleteFile(@PathVariable Long fileId) {
+  public ResponseEntity<ResponseDto<Boolean>> deleteFile(@PathVariable Long fileId, HttpServletRequest request) {
     log.info("Deleting file with id: {}...", fileId);
-    var result = fileService.deleteFile(fileId);
+    var result = fileService.deleteFile(fileId, request);
     return ResponseEntity.status(result.getCode()).body(result);
   }
 
@@ -200,10 +201,11 @@ public class FileController {
   @PostMapping(path = "/sign")
   @ActivityLogger(description = "Firmando un documento", action = "Firma")
   public ResponseEntity<ResponseDto<QrDto>> signFile(@AccessUser UserData userData,
-      @Valid @ModelAttribute SignFileDto signFileDto) {
+      @Valid @ModelAttribute SignFileDto signFileDto, HttpServletRequest request) {
     log.info("Sign files...");
     signFileDto.setUserId(userData.getUserId());
     var uploadedFiles = fileService.signFile(signFileDto);
+    request.setAttribute("log_description", "Firmando el documento: " + uploadedFiles.getData().getFile().getTitle());
     return ResponseEntity.status(uploadedFiles.getCode()).body(uploadedFiles);
   }
 }

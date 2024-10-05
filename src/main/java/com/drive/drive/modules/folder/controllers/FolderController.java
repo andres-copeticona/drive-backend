@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,10 +86,12 @@ public class FolderController {
   @ActivityLogger(description = "Creó una carpeta nueva", action = "Crear")
   public ResponseEntity<ResponseDto<Boolean>> createFolder(
       @AccessUser UserData userData,
-      @Valid @RequestBody CreateFolderDto createFolderDto) {
+      @Valid @RequestBody CreateFolderDto createFolderDto, HttpServletRequest request) {
     log.info("Creating folder '{}' for user ID {}.", createFolderDto.getName(), userData.getUserId());
     createFolderDto.setIdUser(userData.getUserId());
     var res = folderService.createFolder(createFolderDto);
+    if (res.getCode() == 200)
+      request.setAttribute("log_description", "Creó la carpeta: " + createFolderDto.getName());
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
@@ -133,9 +136,9 @@ public class FolderController {
   })
   @DeleteMapping("/{folderId}")
   @ActivityLogger(description = "Eliminó una carpeta", action = "Eliminar")
-  public ResponseEntity<ResponseDto<Boolean>> deleteFolder(@PathVariable Long folderId) {
+  public ResponseEntity<ResponseDto<Boolean>> deleteFolder(@PathVariable Long folderId, HttpServletRequest request) {
     log.info("Deleting Folder '{}'.", folderId);
-    var res = folderService.deleteFolder(folderId);
+    var res = folderService.deleteFolder(folderId, request);
     return ResponseEntity.status(res.getCode()).body(res);
   }
 

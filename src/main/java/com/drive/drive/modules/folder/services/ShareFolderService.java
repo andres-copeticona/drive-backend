@@ -28,6 +28,7 @@ import com.drive.drive.shared.dto.ListResponseDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.services.SendNotificationService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -73,10 +74,12 @@ public class ShareFolderService {
     }
   }
 
-  public ResponseDto<Boolean> share(ShareFolderDto shareFolderDto) {
+  public ResponseDto<Boolean> share(ShareFolderDto shareFolderDto, HttpServletRequest request) {
     try {
       UserEntity emisor = userRepository.findById(shareFolderDto.getEmisorId()).get();
       FolderEntity folder = folderRepository.findById(shareFolderDto.getId()).get();
+
+      String receptorNames = "";
 
       for (Long id : shareFolderDto.getReceptorIds()) {
         UserEntity user = userRepository.findById(id).get();
@@ -87,10 +90,14 @@ public class ShareFolderService {
         sharedFolder.setType(shareFolderDto.getType());
         sharedFolder.setSharedAt(new Date());
         sharedFolderRepository.save(sharedFolder);
+        receptorNames += user.getFullname() + ", ";
       }
 
       notificationService.sendShareFolderNotification(
           shareFolderDto.getReceptorIds(), folder.getName(), emisor.getFullname());
+
+      request.setAttribute("log_description",
+          "Compartir carpeta: " + folder.getName() + " con: " + receptorNames);
 
       return new ResponseDto<>(200, true, "Carpeta compartida correctamente");
     } catch (Exception e) {

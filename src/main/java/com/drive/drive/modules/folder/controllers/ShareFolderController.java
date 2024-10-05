@@ -21,6 +21,7 @@ import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.utils.activityLogger.ActivityLogger;
 
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,10 +44,11 @@ public class ShareFolderController {
   @ActivityLogger(description = "Compartir carpeta", action = "Compartir")
   public ResponseEntity<ResponseDto<Boolean>> share(
       @AccessUser UserData user,
-      @RequestBody ShareFolderDto shareFolderDto) {
+      @Valid @RequestBody ShareFolderDto shareFolderDto,
+      HttpServletRequest request) {
     log.info("Share folder {}, with {}", shareFolderDto.getId(), shareFolderDto.getReceptorIds());
     shareFolderDto.setEmisorId(user.getUserId());
-    var res = shareFolderService.share(shareFolderDto);
+    var res = shareFolderService.share(shareFolderDto, request);
     return ResponseEntity.status(res.getCode()).body(res);
   }
 
@@ -65,10 +67,14 @@ public class ShareFolderController {
   @ActivityLogger(description = "Compartir carpeta con todos los usuarios", action = "Compartir")
   public ResponseEntity<ResponseDto<Boolean>> shareDependency(
       @AccessUser UserData user,
-      @RequestBody ShareFolderDto shareFolderDto) {
+      @Valid @RequestBody ShareFolderDto shareFolderDto,
+      HttpServletRequest request) {
     log.info("Share folder {}, with {}", shareFolderDto.getId(), shareFolderDto.getDependency());
     shareFolderDto.setEmisorId(user.getUserId());
     var res = shareFolderService.shareDependency(shareFolderDto);
+    if (res.getCode() == 200)
+      request.setAttribute("log_description", "Compartir carpeta con dependencia: " + shareFolderDto.getDependency());
+
     return ResponseEntity.status(res.getCode()).body(res);
   }
 }
