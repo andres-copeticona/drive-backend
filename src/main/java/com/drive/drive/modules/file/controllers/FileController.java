@@ -11,6 +11,9 @@ import com.drive.drive.shared.dto.QrDto;
 import com.drive.drive.shared.dto.ResponseDto;
 import com.drive.drive.shared.utils.activityLogger.ActivityLogger;
 
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
+import io.minio.errors.MinioException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,12 +26,14 @@ import jakarta.validation.Valid;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.InputStream;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +42,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/v1/files")
 @Tag(name = "File", description = "Endpoints for file operations")
 public class FileController {
+
+  @Autowired
+  MinioClient minioClient;
 
   @Autowired
   private FileService fileService;
@@ -100,6 +108,40 @@ public class FileController {
     log.info("Fetching file with code: {}...", code);
     ResponseDto<FileDto> res = fileService.getPublicFileByCode(code);
     return ResponseEntity.status(res.getCode()).body(res);
+  }
+
+  @Operation(summary = "View File by code")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully fetched file by ID"),
+      @ApiResponse(responseCode = "500", description = "Failed to fetch the file", content = @Content(schema = @Schema(implementation = ErrorResponseDto.class)))
+  })
+  @GetMapping("/{code}/view")
+  @IsPublic
+  public ResponseEntity<InputStreamResource> viewFile(@PathVariable String code) {
+    try {
+      var file = fileService.getFileByCode(code);
+      if (file == null) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+      }
+
+      String bucketName = file.getFolder().getCode();
+
+      InputStream stream = minioClient.getObject(GetObjectArgs.builder().bucket(bucketName).object(code).build());
+
+      InputStreamResource resource = new InputStreamResource(stream);
+
+      HttpHeaders headers = new HttpHeaders();
+      headers.add("Content-Disposition", "attachment; filename=" + file.getTitle());
+      headers.add("Content-Type", "application/octet-stream");
+
+      return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+    } catch (MinioException e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
   }
 
   @Operation(summary = "Download file by ID")

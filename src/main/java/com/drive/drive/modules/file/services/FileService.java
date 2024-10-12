@@ -146,6 +146,16 @@ public class FileService {
     }
   }
 
+  public FileEntity getFileByCode(String fileId) {
+    try {
+      return fileRepository.findByCodeAndDeletedFalse(fileId).get();
+    } catch (Exception e) {
+      log.error("Error getting file by ID {}: {}", fileId, e.getMessage());
+      return null;
+    }
+
+  }
+
   public ResponseDto<FileDto> getPublicFileByCode(String code) {
     ResponseDto<FileDto> res = new ResponseDto<FileDto>().setCode(200);
     try {

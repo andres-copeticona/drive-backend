@@ -48,7 +48,7 @@ public class FileMapper {
     fileDto.setModifiedDate(file.getModifiedDate());
     fileDto.setEtag(file.getEtag());
     fileDto.setFolderId(file.getFolder().getId());
-    fileDto.setMinioLink(file.getMinioLink());
+    fileDto.setMinioLink("http://localhost:8080/api/v1/files/" + file.getCode() + "/view");
     fileDto.setCategory(file.getCategory());
     fileDto.setCode(file.getCode());
     fileDto.setSize(file.getSize());

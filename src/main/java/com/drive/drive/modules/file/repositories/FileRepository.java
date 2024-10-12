@@ -11,6 +11,8 @@ public interface FileRepository extends JpaRepository<FileEntity, Long>, JpaSpec
   // find by user id
   List<FileEntity> findByDeletedFalse();
 
+  Optional<FileEntity> findByCodeAndDeletedFalse(String code);
+
   List<FileEntity> findByFolder_Id(Long folderId);
 
   // find by user id
