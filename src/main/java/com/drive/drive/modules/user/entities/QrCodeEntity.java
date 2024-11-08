@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 import com.drive.drive.modules.file.entities.FileEntity;
 
 @Data
@@ -14,6 +17,8 @@ import com.drive.drive.modules.file.entities.FileEntity;
 @AllArgsConstructor
 @Entity
 @Table(name = "qr_codes")
+@SQLDelete(sql = "UPDATE qr_codes SET deleted = true WHERE id = ?")
+@SQLRestriction("deleted <> true")
 public class QrCodeEntity {
 
   @Id
@@ -39,6 +44,9 @@ public class QrCodeEntity {
 
   @Column(name = "Visitas")
   private Integer visits;
+
+  @Column(name = "deleted")
+  private Boolean deleted;
 
   @OneToOne
   @JoinColumn(name = "ArchivoID", referencedColumnName = "DocumentoID")

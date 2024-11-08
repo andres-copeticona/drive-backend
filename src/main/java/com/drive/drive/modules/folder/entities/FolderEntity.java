@@ -8,11 +8,16 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "carpetas")
+@SQLDelete(sql = "UPDATE carpetas SET deleted = true WHERE FolderID = ?")
+@SQLRestriction("deleted <> true")
 public class FolderEntity {
 
   @Id

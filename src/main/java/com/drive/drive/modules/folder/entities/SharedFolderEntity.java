@@ -7,10 +7,15 @@ import lombok.Setter;
 
 import java.util.Date;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Getter
 @Setter
 @Entity
 @Table(name = "Carpetas_Compartidos")
+@SQLDelete(sql = "UPDATE Carpetas_Compartidos SET deleted = true WHERE id = ?")
+@SQLRestriction("deleted <> true")
 public class SharedFolderEntity {
 
   @Id
@@ -34,5 +39,8 @@ public class SharedFolderEntity {
 
   @Column(name = "shared_at")
   private Date sharedAt;
+
+  @Column(name = "deleted")
+  private Boolean deleted;
 
 }

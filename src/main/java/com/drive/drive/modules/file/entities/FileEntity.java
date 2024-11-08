@@ -8,6 +8,9 @@ import lombok.*;
 
 import java.util.Date;
 
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.SQLDelete;;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,6 +18,8 @@ import java.util.Date;
 @Getter
 @Setter
 @Table(name = "Documentos")
+@SQLDelete(sql = "UPDATE Documentos SET deleted = true WHERE DocumentoID = ?")
+@SQLRestriction("deleted <> true")
 public class FileEntity {
 
   @Id

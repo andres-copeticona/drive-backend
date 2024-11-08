@@ -7,11 +7,16 @@ import lombok.experimental.Accessors;
 
 import java.util.Date;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 @Getter
 @Setter
 @Accessors(chain = true)
 @Entity
 @Table(name = "Usuario")
+@SQLDelete(sql = "UPDATE Usuario SET deleted = true WHERE UsuarioID = ?")
+@SQLRestriction("deleted <> true")
 public class UserEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
