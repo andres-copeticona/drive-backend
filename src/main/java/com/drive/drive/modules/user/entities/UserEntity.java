@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 
 import java.util.Date;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -73,7 +74,8 @@ public class UserEntity {
   @Column(nullable = true)
   private Date updatedAt;
   @Column(nullable = false)
-  private boolean deleted = false;
+  @ColumnDefault(value = "false")
+  private boolean deleted;
 
   public String getFullname() {
     return this.names + " " + this.firstSurname + " " + this.secondSurname;

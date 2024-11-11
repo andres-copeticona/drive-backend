@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -40,7 +41,8 @@ public class FolderEntity {
   @Column(name = "UpdatedAt")
   private Date updateDate;
 
-  @Column(name = "Deleted")
+  @Column(name = "Deleted", nullable = false)
+  @ColumnDefault(value = "false")
   private Boolean deleted;
 
   @Column(name = "Visitas")

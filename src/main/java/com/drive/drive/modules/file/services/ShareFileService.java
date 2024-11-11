@@ -85,6 +85,7 @@ public class ShareFileService {
         sharedFolder.setReceptor(user);
         sharedFolder.setType(shareFolderDto.getType());
         sharedFolder.setSharedAt(new Date());
+        sharedFolder.setDeleted(false);
         sharedFileRepository.save(sharedFolder);
         receptorNames += user.getFullname() + ", ";
       }
@@ -114,6 +115,7 @@ public class ShareFileService {
         sharedFolder.setReceptor(user);
         sharedFolder.setType(createSharedFileDto.getType());
         sharedFolder.setSharedAt(new Date());
+        sharedFolder.setDeleted(false);
         sharedFileRepository.save(sharedFolder);
 
         notificationService.sendShareFileNotification(List.of(user.getId()), folder.getTitle(), emisor.getFullname());
@@ -138,6 +140,7 @@ public class ShareFileService {
         sharedFolder.setReceptor(user);
         sharedFolder.setType(createSharedFileDto.getType());
         sharedFolder.setSharedAt(new Date());
+        sharedFolder.setDeleted(false);
         sharedFileRepository.save(sharedFolder);
 
         notificationService.sendShareFolderNotification(List.of(user.getId()), file.getTitle(), emisor.getFullname());

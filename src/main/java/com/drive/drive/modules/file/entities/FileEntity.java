@@ -9,6 +9,7 @@ import lombok.*;
 import java.util.Date;
 
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;;
 
 @Data
@@ -51,7 +52,8 @@ public class FileEntity {
   @Column(name = "ModifiedDate")
   private Date modifiedDate;
 
-  @Column(name = "Deleted")
+  @Column(name = "Deleted", nullable = false)
+  @ColumnDefault(value = "false")
   private Boolean deleted;
 
   @Column(name = "Visitas")

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -45,7 +46,8 @@ public class QrCodeEntity {
   @Column(name = "Visitas")
   private Integer visits;
 
-  @Column(name = "deleted")
+  @Column(name = "deleted", nullable = false)
+  @ColumnDefault(value = "false")
   private Boolean deleted;
 
   @OneToOne

@@ -9,6 +9,7 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -28,7 +29,8 @@ public class RoleEntity {
   @Column(name = "NombreRol", nullable = false)
   private String name;
 
-  @Column(name = "deleted")
+  @Column(name = "deleted", nullable = false)
+  @ColumnDefault(value = "false")
   private Boolean deleted;
 
   @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)

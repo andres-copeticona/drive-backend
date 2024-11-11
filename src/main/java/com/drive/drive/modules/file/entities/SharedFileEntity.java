@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -46,6 +47,7 @@ public class SharedFileEntity {
   @Column(name = "LinkDocumento")
   private String fileLink;
 
-  @Column(name = "Deleted")
+  @Column(name = "Deleted", nullable = false)
+  @ColumnDefault(value = "false")
   private Boolean deleted;
 }
