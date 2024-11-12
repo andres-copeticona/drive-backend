@@ -91,6 +91,8 @@ public class ShareFolderService {
         sharedFolder.setSharedAt(new Date());
         sharedFolder.setDeleted(false);
         sharedFolderRepository.save(sharedFolder);
+        folder.setAccessType("compartido");
+        folderRepository.save(folder);
         receptorNames += user.getFullname() + ", ";
       }
 
@@ -121,6 +123,8 @@ public class ShareFolderService {
         sharedFolder.setSharedAt(new Date());
         sharedFolder.setDeleted(false);
         sharedFolderRepository.save(sharedFolder);
+        folder.setAccessType("compartido");
+        folderRepository.save(folder);
         notificationService.sendShareFolderNotification(List.of(user.getId()), folder.getName(), emisor.getFullname());
       }
 
@@ -145,6 +149,8 @@ public class ShareFolderService {
         sharedFolder.setSharedAt(new Date());
         sharedFolder.setDeleted(false);
         sharedFolderRepository.save(sharedFolder);
+        folder.setAccessType("compartido");
+        folderRepository.save(folder);
         notificationService.sendShareFolderNotification(List.of(user.getId()), folder.getName(), emisor.getFullname());
       }
 
