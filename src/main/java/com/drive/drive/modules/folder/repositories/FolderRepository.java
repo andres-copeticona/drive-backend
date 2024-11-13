@@ -29,11 +29,12 @@ public interface FolderRepository extends JpaRepository<FolderEntity, Long>, Jpa
 
   @Modifying
   @Transactional
-  @Query("DELETE FROM FileEntity d WHERE d.folder.id = :folderId")
+  @Query("UPDATE FileEntity d SET d.deleted = true WHERE d.folder.id = :folderId")
   void deleteDocumentsByFolderId(Long folderId);
 
   @Modifying
   @Transactional
+  @Query("UPDATE FolderEntity f SET f.deleted = true WHERE f.name = :name")
   void deleteByName(String name);
 
   List<FolderEntity> findByName(String name);
@@ -44,7 +45,7 @@ public interface FolderRepository extends JpaRepository<FolderEntity, Long>, Jpa
   void clearParentFolderReferences(Long parentFolderId);
 
   @Modifying
-  @Query("DELETE FROM SharedFolderEntity cc WHERE cc.folder.id = :folderId")
+  @Query("UPDATE SharedFolderEntity cc SET cc.deleted = true WHERE cc.folder.id = :folderId")
   void deleteSharedFolderReferencesByFolderId(Long folderId);
 
   boolean existsByNameAndParentFolder_IdAndUser_id(String name, Long parentFolderId, Long userId);

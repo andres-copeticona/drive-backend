@@ -219,12 +219,13 @@ public class FileService {
 
       List<SharedFileEntity> sharedDocuments = sharedFileRepository.findByFile_Id(fileId);
       this.notificationService.sendDeleteFileNotification(sharedDocuments, file);
-      sharedFileRepository.deleteAll(sharedDocuments);
+      fileRepository.deleteSharedDocumentsReferencesByDocumentID(fileId);
 
-      if (!sharedDocuments.isEmpty())
-        sharedFileRepository.deleteAll(sharedDocuments);
+      /*if (!sharedDocuments.isEmpty()){
+        fileRepository.deleteSharedDocumentsReferencesByDocumentID(fileId);
+      }*/
 
-      minioService.deleteObject(file);
+      //minioService.deleteObject(file);
 
       fileRepository.delete(file);
 

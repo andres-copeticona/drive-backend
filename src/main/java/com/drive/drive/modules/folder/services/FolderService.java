@@ -214,10 +214,14 @@ public class FolderService {
       FolderEntity folder = folderRepository.findById(folderId).get();
       notificationService.sendDeleteFolderNotification(userIds, folder.getName());
       deleteChildFolders(folderId);
+      List<FileEntity> childFiles = fileRepository.findByFolder_Id(folderId);
       folderRepository.deleteSharedFolderReferencesByFolderId(folderId);
+      for(FileEntity childFile : childFiles){
+        fileRepository.deleteSharedDocumentsReferencesByDocumentID(childFile.getId());
+      }
       folderRepository.deleteDocumentsByFolderId(folderId);
       folderRepository.deleteById(folderId);
-      folderRepository.clearParentFolderReferences(folderId);
+      //folderRepository.clearParentFolderReferences(folderId);
       folderRepository.deleteById(folderId);
 
       request.setAttribute("log_description", "Eliminó la carpeta: " + folder.getName());
@@ -231,10 +235,15 @@ public class FolderService {
   @Transactional
   private void deleteChildFolders(Long parentFolderId) throws Exception {
     List<FolderEntity> childFolders = folderRepository.findByParentFolder_Id(parentFolderId);
+    List<FileEntity> childFiles;
     for (FolderEntity childFolder : childFolders) {
       deleteChildFolders(childFolder.getId());
-      minioService.deleteBucket(childFolder.getCode());
+      //minioService.deleteBucket(childFolder.getCode());
       folderRepository.deleteSharedFolderReferencesByFolderId(childFolder.getId());
+      childFiles = fileRepository.findByFolder_Id(parentFolderId);
+      for(FileEntity childFile : childFiles){
+        fileRepository.deleteSharedDocumentsReferencesByDocumentID(childFile.getId());
+      }
       folderRepository.deleteDocumentsByFolderId(childFolder.getId());
       folderRepository.deleteById(childFolder.getId());
     }

@@ -1,8 +1,13 @@
 package com.drive.drive.modules.file.repositories;
 
 import com.drive.drive.modules.file.entities.FileEntity;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,4 +38,9 @@ public interface FileRepository extends JpaRepository<FileEntity, Long>, JpaSpec
   List<FileEntity> findByFolder_IdAndDeletedFalse(Long folderId);
 
   Optional<FileEntity> findByCodeAndAccessTypeAndDeletedFalse(String code, String accessType);
+
+  @Modifying
+  @Transactional
+  @Query("UPDATE SharedFileEntity dc SET dc.deleted = true where dc.file.id = :id")
+  void deleteSharedDocumentsReferencesByDocumentID(Long id);
 }
