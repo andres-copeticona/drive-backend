@@ -31,7 +31,7 @@ public class RoleEntity {
 
   @Column(name = "deleted", nullable = false)
   @ColumnDefault(value = "false")
-  private Boolean deleted;
+  private Boolean deleted = false;
 
   @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true)
   @JsonBackReference

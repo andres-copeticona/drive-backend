@@ -75,7 +75,7 @@ public class UserEntity {
   private Date updatedAt;
   @Column(nullable = false)
   @ColumnDefault(value = "false")
-  private boolean deleted;
+  private boolean deleted = false;
 
   public String getFullname() {
     return this.names + " " + this.firstSurname + " " + this.secondSurname;

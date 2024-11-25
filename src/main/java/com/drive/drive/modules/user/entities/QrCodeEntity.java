@@ -48,7 +48,7 @@ public class QrCodeEntity {
 
   @Column(name = "deleted", nullable = false)
   @ColumnDefault(value = "false")
-  private Boolean deleted;
+  private Boolean deleted = false;
 
   @OneToOne
   @JoinColumn(name = "ArchivoID", referencedColumnName = "DocumentoID")

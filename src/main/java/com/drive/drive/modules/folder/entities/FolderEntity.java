@@ -43,7 +43,7 @@ public class FolderEntity {
 
   @Column(name = "Deleted", nullable = false)
   @ColumnDefault(value = "false")
-  private Boolean deleted;
+  private Boolean deleted = false;
 
   @Column(name = "Visitas")
   private Integer visits;
